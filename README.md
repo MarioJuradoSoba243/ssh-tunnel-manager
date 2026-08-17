@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Definición completada; implementación todavía no iniciada.**
+**Fase 1 completada: bootstrap técnico y build base.** La persistencia y el motor SSH todavía no están implementados.
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -102,15 +102,24 @@ openspec/changes/create-ssh-tunnel-manager/tasks.md
 
 ## Build
 
-El proyecto Maven todavía no existe: se creará en la Fase 1 de implementación.
+Los comandos canónicos del bootstrap son:
 
-Una vez completado el bootstrap, los comandos canónicos deberán ser equivalentes a:
 
 ```powershell
 .\mvnw.cmd spotless:apply
 .\mvnw.cmd test
 .\mvnw.cmd verify
 ```
+
+El wrapper descarga Maven 3.9.11 y el proyecto requiere un JDK 25.
+
+Para generar la application image, el instalador `.exe` y el ZIP portable en Windows 11 x64:
+
+```powershell
+.\scripts\package-windows.ps1 -Type all
+```
+
+El script requiere `jpackage` de un JDK 25. La application image, el instalador y el ZIP portable se generan en `dist/`.
 
 Los cambios relacionados con SSH deberán ejecutar además los integration tests correspondientes.
 
@@ -142,6 +151,20 @@ docs/user-guide/en/
 ```
 
 Los cambios visibles para el usuario deben actualizar la guía correspondiente en el mismo cambio.
+
+## Estructura del código
+
+El proyecto es un único artefacto Maven con separación por packages:
+
+```text
+src/main/java/com/ssh/tunnelmanager/
+├── application/       # casos de uso y ViewModels sin JavaFX
+├── domain/            # modelo de dominio independiente
+├── infrastructure/    # adaptadores externos
+└── ui/                # JavaFX, FXML y temas
+```
+
+El bootstrap ensambla el grafo explícitamente mediante constructores; no hay contenedor DI.
 
 ## Trabajo con Codex
 
