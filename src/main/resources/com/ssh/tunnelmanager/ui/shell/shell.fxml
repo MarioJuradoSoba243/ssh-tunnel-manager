@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.ssh.tunnelmanager.ui.shell.ShellController"
+            styleClass="app-shell">
+    <left>
+        <VBox prefWidth="230.0" spacing="12.0" styleClass="navigation-pane">
+            <padding>
+                <Insets bottom="20.0" left="16.0" right="16.0" top="20.0" />
+            </padding>
+            <Label styleClass="application-title" text="SSH Tunnel Manager" />
+            <ListView fx:id="navigationList" accessibleText="Navegación principal" VBox.vgrow="ALWAYS" />
+        </VBox>
+    </left>
+    <center>
+        <StackPane styleClass="content-pane">
+            <VBox maxWidth="720.0" spacing="10.0">
+                <Label fx:id="sectionTitle" styleClass="section-title" text="Inicio" />
+                <Label fx:id="sectionDescription" wrapText="true"
+                       text="Bienvenido al gestor de túneles SSH." />
+            </VBox>
+        </StackPane>
+    </center>
+</BorderPane>

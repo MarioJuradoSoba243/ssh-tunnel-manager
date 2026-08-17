@@ -1,0 +1,46 @@
+.root {
+    -app-accent: #2f6fed;
+    -app-border: #d5d9e2;
+    -app-muted: #667085;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 14px;
+}
+
+.app-shell {
+    -fx-background-color: -fx-background;
+}
+
+.navigation-pane {
+    -fx-background-color: -fx-panel-background;
+    -fx-border-color: transparent -app-border transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.application-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.content-pane {
+    -fx-padding: 40px;
+}
+
+.section-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 10px 12px;
+}
+
+.list-cell:selected {
+    -fx-background-color: -app-accent;
+    -fx-text-fill: white;
+}

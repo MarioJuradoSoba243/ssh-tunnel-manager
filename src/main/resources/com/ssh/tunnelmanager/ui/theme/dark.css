@@ -1,0 +1,7 @@
+.root {
+    -app-border: #3c4657;
+    -fx-background: #171b24;
+    -fx-panel-background: #202632;
+    -fx-text-base-color: #edf1f7;
+    -fx-control-inner-background: #252d3a;
+}
