@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Compile
+        run: .\mvnw.cmd -B -DskipTests compile
+
+  quality:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Format check
+        run: .\mvnw.cmd -B spotless:check
+      - name: Unit and architecture tests
+        run: .\mvnw.cmd -B test
+      - name: Verify
+        run: .\mvnw.cmd -B verify
+
+  package:
+    runs-on: windows-latest
+    needs: [compile, quality]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Install portable WiX 3.14
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'wix314-binaries.zip'
+          Invoke-WebRequest -Uri 'https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLower() -ne '6ac824e1642d6f7277d0ed7ea09411a508f6116ba6fae0aa5f2c7daa2ff43d31') { throw 'Checksum WiX inválido.' }
+          $wixHome = Join-Path $env:RUNNER_TEMP 'wix314-binaries'
+          Expand-Archive -LiteralPath $archive -DestinationPath $wixHome
+          $wixHome | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Build application image, installer and portable ZIP
+        shell: pwsh
+        run: .\scripts\package-windows.ps1 -Type all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssh-tunnel-manager-windows
+          path: dist/*
