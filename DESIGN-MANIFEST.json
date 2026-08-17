@@ -1,0 +1,7 @@
+{
+  "design": "openspec/changes/create-ssh-tunnel-manager/design.md",
+  "required_sections_missing": [],
+  "decision_count": 60,
+  "open_questions": 4,
+  "ssh_engine_status": "Apache MINA SSHD candidate; mandatory spike before final adoption"
+}

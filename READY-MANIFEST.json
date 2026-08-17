@@ -1,0 +1,10 @@
+{
+  "change": "create-ssh-tunnel-manager",
+  "schema": "spec-driven",
+  "created": "2026-08-17",
+  "spec_count": 13,
+  "task_count": 266,
+  "required_missing": [],
+  "implementation_status": "not-started",
+  "ssh_engine": "Apache MINA SSHD candidate gated by Phase 2 spike"
+}

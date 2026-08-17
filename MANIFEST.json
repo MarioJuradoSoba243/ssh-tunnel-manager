@@ -1,0 +1,21 @@
+{
+  "change": "create-ssh-tunnel-manager",
+  "proposal": "openspec/changes/create-ssh-tunnel-manager/proposal.md",
+  "spec_count": 13,
+  "specs": [
+    "application-lifecycle",
+    "application-settings",
+    "credential-security",
+    "data-portability",
+    "desktop-experience",
+    "diagnostics",
+    "ssh-host-management",
+    "ssh-routing",
+    "tunnel-configuration",
+    "tunnel-groups",
+    "tunnel-lifecycle",
+    "tunnel-monitoring",
+    "workspace-organization"
+  ],
+  "validation_errors": []
+}
