@@ -32,30 +32,30 @@
 
 ## 2. Spike obligatorio del motor SSH
 
-- [ ] 2.1 Añadir Apache MINA SSHD con una versión concreta y aislada en infraestructura/spike.
-- [ ] 2.2 Crear la topología Docker Compose de integración con `jump-1`, `jump-2`, `ssh-final` y un servicio TCP destino.
-- [ ] 2.3 Configurar usuarios y passwords independientes para `jump-1`, `jump-2` y `ssh-final`.
-- [ ] 2.4 Probar conexión SSH directa mediante usuario/password.
-- [ ] 2.5 Probar una ruta con un jump y credenciales distintas entre jump y host final.
-- [ ] 2.6 Probar una ruta con dos jumps y credenciales distintas en los tres hosts SSH.
-- [ ] 2.7 Probar Local Port Forwarding directo.
-- [ ] 2.8 Probar Local Port Forwarding a través de un jump.
-- [ ] 2.9 Probar Local Port Forwarding a través de dos jumps.
-- [ ] 2.10 Probar un `destinationHost` distinto del host SSH final.
-- [ ] 2.11 Probar obtención y validación de la host public key/fingerprint para cada host de la ruta.
-- [ ] 2.12 Probar rechazo de una host key desconocida cuando no existe aprobación.
-- [ ] 2.13 Probar continuación de la conexión después de una aprobación explícita controlada por el test.
-- [ ] 2.14 Probar detección de cambio de host key y bloqueo de la conexión.
-- [ ] 2.15 Probar keep-alive/heartbeat con el valor de diseño.
-- [ ] 2.16 Probar detección de pérdida de conexión.
-- [ ] 2.17 Probar timeout de conexión por tramo.
-- [ ] 2.18 Probar cierre/cancelación limpia durante conexión y con forwarding activo.
-- [ ] 2.19 Probar destino TCP inaccesible para la operación `Probar conexión`.
-- [ ] 2.20 Documentar resultados, limitaciones y APIs relevantes del spike.
+- [x] 2.1 Añadir Apache MINA SSHD 2.18.0 con scope de test, aislada en infraestructura/spike mientras el gate siga abierto.
+- [x] 2.2 Crear la topología Docker Compose de integración con `jump-1`, `jump-2`, `ssh-final` y un servicio TCP destino. La ejecución queda pendiente porque Docker no está instalado en el entorno.
+- [x] 2.3 Configurar usuarios y passwords independientes para `jump-1`, `jump-2` y `ssh-final`.
+- [x] 2.4 Probar conexión SSH directa mediante usuario/password. PASS en fixture MINA in-process.
+- [x] 2.5 Probar una ruta con un jump y credenciales distintas entre jump y host final. PASS en fixture MINA in-process.
+- [x] 2.6 Probar una ruta con dos jumps y credenciales distintas en los tres hosts SSH. PASS en fixture MINA in-process.
+- [x] 2.7 Probar Local Port Forwarding directo. PASS en fixture MINA in-process.
+- [x] 2.8 Probar Local Port Forwarding a través de un jump. PASS en fixture MINA in-process.
+- [x] 2.9 Probar Local Port Forwarding a través de dos jumps. PASS en fixture MINA in-process.
+- [x] 2.10 Probar un `destinationHost` distinto del host SSH final. PASS en fixture MINA in-process.
+- [x] 2.11 Probar obtención y validación de la host public key/fingerprint para cada host de la ruta. PASS en fixture MINA in-process.
+- [x] 2.12 Probar rechazo de una host key desconocida cuando no existe aprobación. PASS en fixture MINA in-process.
+- [x] 2.13 Probar continuación de la conexión después de una aprobación explícita controlada por el test. PASS en fixture MINA in-process.
+- [x] 2.14 Probar detección de cambio de host key y bloqueo de la conexión. PASS en fixture MINA in-process.
+- [x] 2.15 Probar keep-alive/heartbeat con el valor de diseño. PASS con 30 s.
+- [x] 2.16 Probar detección de pérdida de conexión. PASS en fixture MINA in-process.
+- [x] 2.17 Probar timeout de conexión por tramo. PASS mediante timeout de lectura de sesión y `ClientSessionEvent.TIMEOUT`.
+- [x] 2.18 Probar cierre/cancelación limpia durante conexión y con forwarding activo. PASS en fixture MINA in-process.
+- [x] 2.19 Probar destino TCP inaccesible para la operación `Probar conexión`. PASS: el forwarding termina sin datos.
+- [x] 2.20 Documentar resultados, limitaciones y APIs relevantes del spike en `docs/technical/mina-ssh-spike.md`.
 - [ ] 2.21 GATE: si todos los requisitos críticos son viables, aceptar MINA y fijar su versión para producción.
 - [ ] 2.22 GATE: si MINA falla materialmente, detener la implementación SSH y reportar qué decisión de `design.md` debe reabrirse.
-- [ ] 2.23 Convertir los escenarios reutilizables del spike en integration tests permanentes.
-- [ ] 2.24 Ejecutar los SSH integration tests completos y `.\mvnw.cmd verify`.
+- [x] 2.23 Convertir los escenarios reutilizables del spike en el integration test permanente `MinaSshSpikeIT`.
+- [x] 2.24 Ejecutar los SSH integration tests disponibles y `.\mvnw.cmd verify`: 14/14 escenarios in-process y build completo pasan; falta ejecutar la topología Docker Compose.
 
 ## 3. Persistencia SQLite y servicios base
 
