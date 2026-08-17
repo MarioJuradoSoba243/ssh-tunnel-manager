@@ -27,6 +27,7 @@
         <failsafe.version>3.5.3</failsafe.version>
         <dependency-plugin.version>3.8.1</dependency-plugin.version>
         <javafx-maven-plugin.version>0.0.8</javafx-maven-plugin.version>
+        <mina.sshd.version>2.18.0</mina.sshd.version>
     </properties>
 
     <dependencies>
@@ -84,6 +85,13 @@
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>${archunit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Candidate SSH engine kept test-scoped until the Phase 2 gate is accepted. -->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${mina.sshd.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

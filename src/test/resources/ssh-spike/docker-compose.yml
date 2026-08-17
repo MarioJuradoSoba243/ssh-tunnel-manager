@@ -1,0 +1,46 @@
+services:
+  jump-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: jump-1
+    environment:
+      SSH_USER: jump1
+      SSH_PASSWORD: jump1-password
+    networks:
+      - ssh-route
+
+  jump-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: jump-2
+    environment:
+      SSH_USER: jump2
+      SSH_PASSWORD: jump2-password
+    networks:
+      - ssh-route
+
+  ssh-final:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: ssh-final
+    environment:
+      SSH_USER: final
+      SSH_PASSWORD: final-password
+    networks:
+      - ssh-route
+
+  tcp-target:
+    image: alpine:3.22
+    command:
+      - /bin/sh
+      - -c
+      - while true; do printf 'ssh-spike-target\\n' | nc -l -p 5432 -q 1; done
+    networks:
+      - ssh-route
+
+networks:
+  ssh-route:
+    driver: bridge
