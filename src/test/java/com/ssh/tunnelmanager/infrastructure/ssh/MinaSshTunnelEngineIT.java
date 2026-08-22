@@ -19,6 +19,9 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -74,6 +77,54 @@ class MinaSshTunnelEngineIT {
       assertThatThrownBy(() -> engine.openTunnel(request))
           .isInstanceOf(MinaSshTunnelEngine.LocalPortInUseException.class)
           .hasMessageContaining("23410");
+    }
+  }
+
+  @Test
+  void opensTwentyIndependentRoutesConcurrentlyAndClosesAllResources() throws Exception {
+    List<TunnelHandle> handles = new ArrayList<>();
+    try {
+      try (var workers = Executors.newVirtualThreadPerTaskExecutor()) {
+        Semaphore connectionWindow = new Semaphore(4);
+        List<Future<TunnelHandle>> futures = new ArrayList<>();
+        for (int index = 0; index < 20; index++) {
+          int localPort = 23500 + index;
+          futures.add(
+              workers.submit(
+                  () -> {
+                    connectionWindow.acquire();
+                    try {
+                      return engine.openTunnel(
+                          request(
+                              new Route(
+                                  List.of(hop("127.0.0.1", 2223, "final", "final-password")),
+                                  localPort),
+                              localPort));
+                    } finally {
+                      connectionWindow.release();
+                    }
+                  }));
+        }
+        for (Future<TunnelHandle> future : futures) handles.add(future.get(30, TimeUnit.SECONDS));
+      }
+
+      for (int index = 0; index < 20; index++) {
+        try (Socket socket = new Socket("127.0.0.1", 23500 + index)) {
+          assertThat(socket.isConnected()).isTrue();
+        }
+      }
+    } finally {
+      handles.forEach(TunnelHandle::close);
+    }
+
+    for (int index = 0; index < 20; index++) {
+      int port = 23500 + index;
+      try (Socket probe = new Socket()) {
+        assertThatThrownBy(
+                () -> probe.connect(new java.net.InetSocketAddress("127.0.0.1", port), 500))
+            .isInstanceOfAny(
+                java.net.ConnectException.class, java.net.SocketTimeoutException.class);
+      }
     }
   }
 
