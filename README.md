@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Fase 1 completada: bootstrap técnico y build base.** La persistencia y el motor SSH todavía no están implementados.
+**Fases 1 y 3 completadas: bootstrap técnico y persistencia SQLite base.** El motor SSH fue validado en la Fase 2 como spike; la implementación completa de túneles todavía pertenece a fases posteriores.
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -59,6 +59,17 @@ Infrastructure
 ```
 
 El proyecto será un único proyecto Maven con separación por packages y tests ArchUnit.
+
+## Persistencia durante el desarrollo
+
+La Fase 3 usa JDBC directo con Xerial SQLite, migraciones propias y conexiones cortas por operación. Los integration tests crean bases SQLite temporales aisladas y no utilizan datos del usuario.
+
+Las rutas se resuelven según el modo de distribución:
+
+- instalado: `%LOCALAPPDATA%\SSH Tunnel Manager\`;
+- portable: `<directorio-de-la-aplicacion>\data\`.
+
+En ambos casos la base se llama `ssh-tunnel-manager.db` y los snapshots consistentes se guardan en `backups`. Los backups se generan con `VACUUM INTO`, se validan con `PRAGMA integrity_check` y se conservan los 10 más recientes.
 
 ## Motor SSH
 

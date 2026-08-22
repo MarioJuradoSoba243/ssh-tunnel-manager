@@ -59,35 +59,35 @@
 
 ## 3. Persistencia SQLite y servicios base
 
-- [ ] 3.1 Añadir `org.xerial:sqlite-jdbc` con versión concreta.
-- [ ] 3.2 Implementar resolución de directorios de datos para modo instalado y portable.
-- [ ] 3.3 Crear `DatabaseFactory`/DataSource con conexiones JDBC cortas por operación.
-- [ ] 3.4 Activar `PRAGMA foreign_keys = ON` en cada conexión.
-- [ ] 3.5 Configurar `PRAGMA journal_mode = WAL` y validar su aplicación.
-- [ ] 3.6 Diseñar y crear `V001__initial_schema.sql`.
-- [ ] 3.7 Crear tablas `ssh_host`, `credential`, `tunnel`, `tunnel_ssh_option`, `tunnel_group` y `tunnel_group_member`.
-- [ ] 3.8 Crear tablas `project`, `environment`, `tag`, `tunnel_tag` y `group_tag`.
-- [ ] 3.9 Crear tablas `trusted_host_key`, `recent_item`, `application_setting`, `keyboard_shortcut` y `schema_version`.
-- [ ] 3.10 Implementar `DatabaseMigrator` propio con migraciones SQL ordenadas y versionadas.
-- [ ] 3.11 Añadir integration tests del migrador desde una base vacía.
-- [ ] 3.12 Añadir integration test de rollback/estado válido ante una migración fallida.
-- [ ] 3.13 Implementar `SshHostRepository` y `CredentialRepository`.
-- [ ] 3.14 Implementar `TunnelRepository`, incluida la ruta de 0/1/2 jumps y opciones SSH avanzadas.
-- [ ] 3.15 Implementar `TunnelGroupRepository` y relaciones N:M.
-- [ ] 3.16 Implementar repositories de Project, Environment y Tag.
-- [ ] 3.17 Implementar repositorio de trusted host keys.
-- [ ] 3.18 Implementar persistencia de settings, favoritos, recientes y atajos de teclado.
-- [ ] 3.19 Añadir integration tests con SQLite real para cada repository.
-- [ ] 3.20 Añadir tests de foreign keys y políticas de borrado acordadas.
-- [ ] 3.21 Añadir tests transaccionales para eliminación de túnel y limpieza de relaciones.
-- [ ] 3.22 Implementar snapshot SQLite consistente para backups sin copiar ingenuamente el archivo WAL activo.
-- [ ] 3.23 Implementar retención de los 10 backups más recientes.
-- [ ] 3.24 Implementar el flag `dirty` y el backup periódico de máximo una vez cada 30 minutos con cambios.
-- [ ] 3.25 Implementar backup previo a migración, importación, restauración y eliminación masiva.
-- [ ] 3.26 Añadir tests de snapshots, retención y restauración de SQLite.
-- [ ] 3.27 Implementar detección de base corrupta/fallo de apertura sin sobrescritura silenciosa.
-- [ ] 3.28 Añadir tests de recuperación ante una base no cargable.
-- [ ] 3.29 Ejecutar `.\mvnw.cmd verify`.
+- [x] 3.1 Añadir `org.xerial:sqlite-jdbc` con versión concreta.
+- [x] 3.2 Implementar resolución de directorios de datos para modo instalado y portable.
+- [x] 3.3 Crear `DatabaseFactory`/DataSource con conexiones JDBC cortas por operación.
+- [x] 3.4 Activar `PRAGMA foreign_keys = ON` en cada conexión.
+- [x] 3.5 Configurar `PRAGMA journal_mode = WAL` y validar su aplicación.
+- [x] 3.6 Diseñar y crear `V001__initial_schema.sql`.
+- [x] 3.7 Crear tablas `ssh_host`, `credential`, `tunnel`, `tunnel_ssh_option`, `tunnel_group` y `tunnel_group_member`.
+- [x] 3.8 Crear tablas `project`, `environment`, `tag`, `tunnel_tag` y `group_tag`.
+- [x] 3.9 Crear tablas `trusted_host_key`, `recent_item`, `application_setting`, `keyboard_shortcut` y `schema_version`.
+- [x] 3.10 Implementar `DatabaseMigrator` propio con migraciones SQL ordenadas y versionadas.
+- [x] 3.11 Añadir integration tests del migrador desde una base vacía.
+- [x] 3.12 Añadir integration test de rollback/estado válido ante una migración fallida.
+- [x] 3.13 Implementar `SshHostRepository` y `CredentialRepository`.
+- [x] 3.14 Implementar `TunnelRepository`, incluida la ruta de 0/1/2 jumps y opciones SSH avanzadas.
+- [x] 3.15 Implementar `TunnelGroupRepository` y relaciones N:M.
+- [x] 3.16 Implementar repositories de Project, Environment y Tag.
+- [x] 3.17 Implementar repositorio de trusted host keys.
+- [x] 3.18 Implementar persistencia de settings, favoritos, recientes y atajos de teclado.
+- [x] 3.19 Añadir integration tests con SQLite real para cada repository.
+- [x] 3.20 Añadir tests de foreign keys y políticas de borrado acordadas.
+- [x] 3.21 Añadir tests transaccionales para eliminación de túnel y limpieza de relaciones.
+- [x] 3.22 Implementar snapshot SQLite consistente para backups sin copiar ingenuamente el archivo WAL activo.
+- [x] 3.23 Implementar retención de los 10 backups más recientes.
+- [x] 3.24 Implementar el flag `dirty` y el backup periódico de máximo una vez cada 30 minutos con cambios.
+- [x] 3.25 Implementar backup previo a migración, importación, restauración y eliminación masiva.
+- [x] 3.26 Añadir tests de snapshots, retención y restauración de SQLite.
+- [x] 3.27 Implementar detección de base corrupta/fallo de apertura sin sobrescritura silenciosa.
+- [x] 3.28 Añadir tests de recuperación ante una base no cargable.
+- [x] 3.29 Ejecutar `.\mvnw.cmd verify`.
 
 ## 4. Milestone 0.1.0 — vertical slice de túneles individuales
 
