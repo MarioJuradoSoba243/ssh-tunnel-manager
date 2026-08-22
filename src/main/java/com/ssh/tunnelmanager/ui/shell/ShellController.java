@@ -221,6 +221,7 @@ public final class ShellController implements AutoCloseable {
     sectionDescription.setText("Favoritos, actividad reciente y estado actual de tus túneles.");
     if (hub == null) return;
     Label summary = new Label("Cargando resumen…");
+    Label emptyFlow = new Label();
     ListView<String> favorites = new ListView<>();
     ListView<String> recent = new ListView<>();
     ListView<String> active = new ListView<>();
@@ -240,6 +241,7 @@ public final class ShellController implements AutoCloseable {
         new VBox(
             10,
             summary,
+            emptyFlow,
             new HBox(8, open, reconnecting, errors),
             new Label("Favoritos"),
             favorites,
@@ -268,6 +270,10 @@ public final class ShellController implements AutoCloseable {
                         + snapshot.reconnectingTunnels()
                         + " · Errores: "
                         + snapshot.errorTunnels());
+                emptyFlow.setText(
+                    snapshot.configuredTunnels() == 0
+                        ? "Primera ejecución: crea un Host SSH, después un túnel y, si lo necesitas, un grupo."
+                        : "");
                 favorites
                     .getItems()
                     .setAll(snapshot.favorites().stream().map(item -> item.name()).toList());
@@ -277,6 +283,20 @@ public final class ShellController implements AutoCloseable {
                 active
                     .getItems()
                     .setAll(snapshot.active().stream().map(item -> item.name()).toList());
+              });
+        });
+    favorites.setOnMouseClicked(
+        event -> {
+          if (event.getClickCount() != 2) return;
+          int index = favorites.getSelectionModel().getSelectedIndex();
+          if (index < 0 || index >= hub.snapshot().favorites().size()) return;
+          HubViewModel.HubItem item = hub.snapshot().favorites().get(index);
+          workers.submit(
+              () -> {
+                if (item.kind() == SearchResult.Kind.TUNNEL)
+                  components.startTunnel().execute(item.id());
+                if (item.kind() == SearchResult.Kind.GROUP)
+                  components.startGroup().execute(item.id());
               });
         });
   }

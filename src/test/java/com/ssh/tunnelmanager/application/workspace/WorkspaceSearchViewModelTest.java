@@ -58,6 +58,54 @@ class WorkspaceSearchViewModelTest {
     assertThat(search.search("service-2")).hasSize(1);
   }
 
+  @Test
+  void filtersLargeTunnelCollectionsByClassificationTagsGroupAndText() {
+    TunnelStore tunnels = new TunnelStore();
+    UUID projectId = UUID.randomUUID();
+    UUID environmentId = UUID.randomUUID();
+    UUID tagId = UUID.randomUUID();
+    UUID groupId = UUID.randomUUID();
+    List<TunnelRecord> values = new ArrayList<>();
+    for (int index = 0; index < 120; index++) {
+      values.add(
+          new TunnelRecord(
+              UUID.randomUUID(),
+              "service-" + index,
+              "127.0.0.1",
+              10000 + index,
+              "target-" + index,
+              80,
+              UUID.randomUUID(),
+              null,
+              null,
+              null,
+              null,
+              null,
+              index == 119 ? projectId : null,
+              index == 119 ? environmentId : null,
+              false,
+              index == 119 ? Set.of(tagId) : Set.of(),
+              Map.of()));
+    }
+    values.forEach(tunnels::save);
+    TunnelFilter filter =
+        new TunnelFilter("service-119", projectId, environmentId, groupId, Set.of(tagId), null);
+
+    assertThat(
+            values.stream()
+                .filter(
+                    tunnel ->
+                        filter.matches(
+                            tunnel,
+                            null,
+                            id -> id.equals(groupId) ? Set.of(tunnel.id()) : Set.of()))
+                .toList())
+        .hasSize(1)
+        .first()
+        .extracting(TunnelRecord::name)
+        .isEqualTo("service-119");
+  }
+
   private static TunnelRecord tunnel(UUID hostId, int index) {
     return new TunnelRecord(
         UUID.randomUUID(),
