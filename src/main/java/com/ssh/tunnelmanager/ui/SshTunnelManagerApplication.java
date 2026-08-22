@@ -4,6 +4,7 @@ import com.ssh.tunnelmanager.application.bootstrap.ApplicationBootstrap;
 import com.ssh.tunnelmanager.application.bootstrap.ApplicationInfo;
 import com.ssh.tunnelmanager.application.shell.ShellViewModel;
 import com.ssh.tunnelmanager.ui.shell.ShellController;
+import com.ssh.tunnelmanager.ui.ssh.FxHostKeyApprovalCoordinator;
 import com.ssh.tunnelmanager.ui.theme.ThemeManager;
 import com.ssh.tunnelmanager.ui.theme.ThemePreference;
 import java.io.IOException;
@@ -19,7 +20,7 @@ public final class SshTunnelManagerApplication extends Application {
   private static final Logger LOGGER = LoggerFactory.getLogger(SshTunnelManagerApplication.class);
   private static final String VERSION = "0.1.0";
 
-  private final ApplicationBootstrap bootstrap;
+  private ApplicationBootstrap bootstrap;
 
   public SshTunnelManagerApplication() {
     this(new ApplicationBootstrap(new ApplicationInfo(VERSION)));
@@ -27,6 +28,15 @@ public final class SshTunnelManagerApplication extends Application {
 
   public SshTunnelManagerApplication(ApplicationBootstrap bootstrap) {
     this.bootstrap = bootstrap;
+  }
+
+  @Override
+  public void init() {
+    if (!bootstrap.isProductionConfigured()) {
+      bootstrap =
+          ApplicationBootstrap.productionDefault(
+              new ApplicationInfo(VERSION), new FxHostKeyApprovalCoordinator());
+    }
   }
 
   @Override
@@ -49,7 +59,8 @@ public final class SshTunnelManagerApplication extends Application {
     loader.setControllerFactory(
         type -> {
           if (type == ShellController.class) {
-            return new ShellController(viewModel);
+            return new ShellController(
+                viewModel, bootstrap.isProductionConfigured() ? bootstrap.components() : null);
           }
           throw new IllegalArgumentException("Controlador no registrado: " + type.getName());
         });
@@ -57,6 +68,11 @@ public final class SshTunnelManagerApplication extends Application {
     Scene scene = new Scene(root, 1024, 700);
     new ThemeManager(() -> ThemePreference.LIGHT).apply(scene, ThemePreference.SYSTEM);
     return scene;
+  }
+
+  @Override
+  public void stop() {
+    if (bootstrap.isProductionConfigured()) bootstrap.components().runtimeManager().close();
   }
 
   public static void main(String[] args) {

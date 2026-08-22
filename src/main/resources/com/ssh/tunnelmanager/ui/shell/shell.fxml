@@ -21,7 +21,7 @@
     </left>
     <center>
         <StackPane styleClass="content-pane">
-            <VBox maxWidth="720.0" spacing="10.0">
+            <VBox fx:id="contentContainer" maxWidth="920.0" spacing="10.0">
                 <Label fx:id="sectionTitle" styleClass="section-title" text="Inicio" />
                 <Label fx:id="sectionDescription" wrapText="true"
                        text="Bienvenido al gestor de túneles SSH." />

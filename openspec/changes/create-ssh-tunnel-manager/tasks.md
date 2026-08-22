@@ -91,58 +91,58 @@
 
 ## 4. Milestone 0.1.0 — vertical slice de túneles individuales
 
-- [ ] 4.1 Crear los modelos de dominio `SshHost`, `Credential`, `Tunnel`, `SshRoute` y tipos de configuración relacionados.
-- [ ] 4.2 Implementar validaciones de host y túnel: nombres únicos, puertos, bind, destino y coherencia de jumps.
-- [ ] 4.3 Implementar `SaveSshHostUseCase`, `DeleteSshHostUseCase` y consultas de hosts.
-- [ ] 4.4 Implementar `SaveTunnelUseCase`, `DeleteTunnelUseCase`, duplicado y consultas de túneles.
-- [ ] 4.5 Definir el contrato productivo de `SshTunnelEngine` a partir del spike aceptado.
-- [ ] 4.6 Convertir el spike aceptado en `MinaSshTunnelEngine` productivo sin filtrar clases MINA fuera de infraestructura.
-- [ ] 4.7 Implementar `TunnelConnectionRequest` como snapshot inmutable de configuración efectiva.
-- [ ] 4.8 Implementar `TunnelHandle` y cierre determinista de todos los recursos de una ruta.
-- [ ] 4.9 Implementar colaboración de host-key verification con public key real y fingerprint SHA-256.
-- [ ] 4.10 Implementar `HostKeyApprovalRequest` y persistencia inmediata de una aprobación.
-- [ ] 4.11 Implementar `HostKeyApprovalCoordinator` serializado.
-- [ ] 4.12 Implementar detección y bloqueo de host key cambiada.
-- [ ] 4.13 Implementar `TestTunnelConnectionUseCase` reutilizando la misma construcción de ruta SSH.
-- [ ] 4.14 Implementar `TunnelRuntime`, `desiredState`, `actualState`, `startedAt` y `executionGeneration`.
-- [ ] 4.15 Implementar `TunnelRuntimeManager` como coordinador único de start/stop.
-- [ ] 4.16 Implementar start idempotente.
-- [ ] 4.17 Implementar stop idempotente.
-- [ ] 4.18 Implementar serialización de operaciones por `tunnelId`.
-- [ ] 4.19 Implementar límite de conexiones/reconexiones mediante una cola FIFO y un coordinador equivalente a `Semaphore`.
-- [ ] 4.20 Implementar estados `CLOSED`, `QUEUED`, `CONNECTING`, `OPEN`, `RECONNECTING`, `STOPPING` y `ERROR`.
-- [ ] 4.21 Implementar keep-alive global por defecto de 30s y override por túnel.
-- [ ] 4.22 Implementar timeout global por defecto de 15s por tramo y override por túnel.
-- [ ] 4.23 Implementar 5 reintentos por defecto y override por túnel.
-- [ ] 4.24 Implementar backoff 2s, 5s, 10s, 20s y 30s.
-- [ ] 4.25 Implementar reconstrucción completa de la ruta en cada reconexión.
-- [ ] 4.26 Implementar cancelación cooperativa y descarte de callbacks de generaciones obsoletas.
-- [ ] 4.27 Implementar `ApplicationEventPublisher` y eventos básicos de lifecycle.
-- [ ] 4.28 Aislar fallos de listeners sin afectar al túnel ni a otros listeners.
-- [ ] 4.29 Implementar logging runtime con `tunnelId`, `hostId` y contexto relevante sin passwords.
-- [ ] 4.30 Implementar editor modal de Host SSH en JavaFX.
-- [ ] 4.31 Implementar mostrar/cambiar password en el editor de Host.
-- [ ] 4.32 Implementar lista de Hosts SSH.
-- [ ] 4.33 Implementar lista de Túneles con `TableView`.
+- [x] 4.1 Crear los modelos de dominio `SshHost`, `Credential`, `Tunnel`, `SshRoute` y tipos de configuración relacionados.
+- [x] 4.2 Implementar validaciones de host y túnel: nombres únicos, puertos, bind, destino y coherencia de jumps.
+- [x] 4.3 Implementar `SaveSshHostUseCase`, `DeleteSshHostUseCase` y consultas de hosts.
+- [x] 4.4 Implementar `SaveTunnelUseCase`, `DeleteTunnelUseCase`, duplicado y consultas de túneles.
+- [x] 4.5 Definir el contrato productivo de `SshTunnelEngine` a partir del spike aceptado.
+- [x] 4.6 Convertir el spike aceptado en `MinaSshTunnelEngine` productivo sin filtrar clases MINA fuera de infraestructura.
+- [x] 4.7 Implementar `TunnelConnectionRequest` como snapshot inmutable de configuración efectiva.
+- [x] 4.8 Implementar `TunnelHandle` y cierre determinista de todos los recursos de una ruta.
+- [x] 4.9 Implementar colaboración de host-key verification con public key real y fingerprint SHA-256.
+- [x] 4.10 Implementar `HostKeyApprovalRequest` y persistencia inmediata de una aprobación.
+- [x] 4.11 Implementar `HostKeyApprovalCoordinator` serializado.
+- [x] 4.12 Implementar detección y bloqueo de host key cambiada.
+- [x] 4.13 Implementar `TestTunnelConnectionUseCase` reutilizando la misma construcción de ruta SSH.
+- [x] 4.14 Implementar `TunnelRuntime`, `desiredState`, `actualState`, `startedAt` y `executionGeneration`.
+- [x] 4.15 Implementar `TunnelRuntimeManager` como coordinador único de start/stop.
+- [x] 4.16 Implementar start idempotente.
+- [x] 4.17 Implementar stop idempotente.
+- [x] 4.18 Implementar serialización de operaciones por `tunnelId`.
+- [x] 4.19 Implementar límite de conexiones/reconexiones mediante una cola FIFO y un coordinador equivalente a `Semaphore`.
+- [x] 4.20 Implementar estados `CLOSED`, `QUEUED`, `CONNECTING`, `OPEN`, `RECONNECTING`, `STOPPING` y `ERROR`.
+- [x] 4.21 Implementar keep-alive global por defecto de 30s y override por túnel.
+- [x] 4.22 Implementar timeout global por defecto de 15s por tramo y override por túnel.
+- [x] 4.23 Implementar 5 reintentos por defecto y override por túnel.
+- [x] 4.24 Implementar backoff 2s, 5s, 10s, 20s y 30s.
+- [x] 4.25 Implementar reconstrucción completa de la ruta en cada reconexión.
+- [x] 4.26 Implementar cancelación cooperativa y descarte de callbacks de generaciones obsoletas.
+- [x] 4.27 Implementar `ApplicationEventPublisher` y eventos básicos de lifecycle.
+- [x] 4.28 Aislar fallos de listeners sin afectar al túnel ni a otros listeners.
+- [x] 4.29 Implementar logging runtime con `tunnelId`, `hostId` y contexto relevante sin passwords.
+- [x] 4.30 Implementar editor modal de Host SSH en JavaFX.
+- [x] 4.31 Implementar mostrar/cambiar password en el editor de Host.
+- [x] 4.32 Implementar lista de Hosts SSH.
+- [x] 4.33 Implementar lista de Túneles con `TableView`.
 - [ ] 4.34 Implementar editor amplio de túnel dentro del shell.
-- [ ] 4.35 Implementar selección independiente de Jump 1, Jump 2 y SSH final.
-- [ ] 4.36 Implementar campos y validaciones de Local Port Forwarding.
+- [x] 4.35 Implementar selección independiente de Jump 1, Jump 2 y SSH final.
+- [x] 4.36 Implementar campos y validaciones de Local Port Forwarding.
 - [ ] 4.37 Implementar ajustes avanzados de timeout, keep-alive, retry count y opciones SSH libres.
-- [ ] 4.38 Impedir opciones SSH libres que contradigan campos estructurados.
-- [ ] 4.39 Implementar `Probar conexión` y su feedback.
-- [ ] 4.40 Implementar diálogo serializado de aprobación de fingerprint.
+- [x] 4.38 Impedir opciones SSH libres que contradigan campos estructurados.
+- [x] 4.39 Implementar `Probar conexión` y su feedback.
+- [x] 4.40 Implementar diálogo serializado de aprobación de fingerprint.
 - [ ] 4.41 Implementar flujo explícito para fingerprint cambiada.
-- [ ] 4.42 Implementar acciones individuales Iniciar, Detener y Reintentar.
-- [ ] 4.43 Implementar visualización de estado, intento de reconexión y tiempo activo desde `startedAt`.
+- [x] 4.42 Implementar acciones individuales Iniciar, Detener y Reintentar.
+- [x] 4.43 Implementar visualización de estado, intento de reconexión y tiempo activo desde `startedAt`.
 - [ ] 4.44 Implementar historial de eventos de la sesión actual por túnel.
 - [ ] 4.45 Implementar edición de túnel activo con `Guardar y reiniciar`.
-- [ ] 4.46 Implementar error explícito de puerto local ocupado sin selección automática de otro puerto.
-- [ ] 4.47 Implementar mensajes de error amigables y `Ver detalles`/`Copiar error`.
+- [x] 4.46 Implementar error explícito de puerto local ocupado sin selección automática de otro puerto.
+- [x] 4.47 Implementar mensajes de error amigables y `Ver detalles`/`Copiar error`.
 - [ ] 4.48 Añadir tests unitarios exhaustivos del state machine, idempotencia, backoff y generaciones.
-- [ ] 4.49 Añadir integration tests productivos de MINA para conexión directa, 1 jump y 2 jumps.
-- [ ] 4.50 Añadir tests del flujo de fingerprints desconocidas y cambiadas.
+- [x] 4.49 Añadir integration tests productivos de MINA para conexión directa, 1 jump y 2 jumps.
+- [x] 4.50 Añadir tests del flujo de fingerprints desconocidas y cambiadas.
 - [ ] 4.51 Añadir tests del editor/ViewModels de Host y Túnel donde sean estables.
-- [ ] 4.52 Documentar en la guía de usuario: hosts, passwords, túneles, jumps, fingerprints, probar conexión, start/stop, reconexión y errores.
+- [x] 4.52 Documentar en la guía de usuario: hosts, passwords, túneles, jumps, fingerprints, probar conexión, start/stop, reconexión y errores.
 - [ ] 4.53 Generar artefactos instalable y portable de `0.1.0`.
 - [ ] 4.54 Ejecutar SSH integration tests, `.\mvnw.cmd verify` y smoke test del package `0.1.0`.
 

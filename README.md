@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Fases 1 y 3 completadas: bootstrap técnico y persistencia SQLite base.** El motor SSH fue validado en la Fase 2 como spike; la implementación completa de túneles todavía pertenece a fases posteriores.
+**Fases 1, 2 y 3 completadas; vertical slice 0.1.0 en implementación.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación ya dispone de la infraestructura base para hosts, túneles individuales y lifecycle; el estado exacto del milestone se mantiene en `tasks.md`.
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -34,7 +34,7 @@ Java 25 LTS
 JavaFX
 Maven
 SQLite + JDBC + Xerial sqlite-jdbc
-Apache MINA SSHD (candidato condicionado al spike técnico)
+Apache MINA SSHD 2.18.0 (gate técnico aceptado)
 SLF4J + Log4j2
 JUnit 5 + AssertJ + Mockito + ArchUnit
 Spotless + google-java-format
@@ -73,7 +73,7 @@ En ambos casos la base se llama `ssh-tunnel-manager.db` y los snapshots consiste
 
 ## Motor SSH
 
-Apache MINA SSHD es el candidato inicial, pero **no está aprobado definitivamente**.
+Apache MINA SSHD 2.18.0 fue aceptado tras el spike obligatorio in-process y Docker.
 
 La Fase 2 de `tasks.md` contiene un spike obligatorio para verificar:
 
@@ -169,7 +169,9 @@ Para generar la application image, el instalador `.exe` y el ZIP portable en Win
 .\scripts\package-windows.ps1 -Type all
 ```
 
-El script requiere `jpackage` de un JDK 25. La application image, el instalador y el ZIP portable se generan en `dist/`.
+El script requiere `jpackage` de un JDK 25. Para el instalador Windows también se
+requieren las herramientas WiX en `PATH`; la application image y el ZIP portable
+se generan en `dist/` aunque el instalador no esté disponible.
 
 El ejecutable del portable está en la raíz de la carpeta extraída:
 

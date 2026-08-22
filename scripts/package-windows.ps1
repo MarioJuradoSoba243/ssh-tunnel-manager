@@ -84,6 +84,8 @@ if ($Type -in @('installer', 'all')) {
 }
 
 if ($Type -in @('portable', 'all')) {
+    $portableFlag = Join-Path $imageDirectory 'portable.flag'
+    New-Item -ItemType File -Path $portableFlag -Force | Out-Null
     $portableZip = Join-Path $distDirectory "$appName-$version-windows-x64-portable.zip"
     if (Test-Path $portableZip) {
         Remove-Item -LiteralPath $portableZip -Force
