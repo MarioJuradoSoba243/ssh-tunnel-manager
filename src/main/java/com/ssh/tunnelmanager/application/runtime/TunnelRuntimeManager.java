@@ -38,6 +38,7 @@ public final class TunnelRuntimeManager implements AutoCloseable {
   private final int defaultRetryCount;
   private final Sleeper sleeper;
   private final Map<UUID, Slot> slots = new ConcurrentHashMap<>();
+  private final AtomicBoolean closed = new AtomicBoolean();
 
   public TunnelRuntimeManager(
       SshTunnelEngine engine,
@@ -68,6 +69,7 @@ public final class TunnelRuntimeManager implements AutoCloseable {
   }
 
   public void start(UUID tunnelId) {
+    if (closed.get()) throw new IllegalStateException("El lifecycle de la aplicación está cerrado");
     Slot slot = slots.computeIfAbsent(tunnelId, ignored -> new Slot(tunnelId));
     synchronized (slot) {
       if (slot.runtime.desiredState() == DesiredState.RUNNING
@@ -150,6 +152,23 @@ public final class TunnelRuntimeManager implements AutoCloseable {
             .map(TunnelRuntime::tunnelId)
             .toList();
     ids.forEach(this::stop);
+  }
+
+  /** Re-enters the normal loss/reconnect policy for currently open tunnels after a resume gap. */
+  public void onResume() {
+    if (closed.get()) return;
+    List<ResumeRequest> requests = new ArrayList<>();
+    for (Slot slot : slots.values()) {
+      synchronized (slot) {
+        if (slot.runtime.desiredState() == DesiredState.RUNNING
+            && slot.runtime.actualState() == ActualState.OPEN
+            && slot.lastHandle != null) {
+          requests.add(new ResumeRequest(slot, slot.generation, slot.lastHandle));
+        }
+      }
+    }
+    requests.forEach(
+        request -> onConnectionLost(request.slot(), request.generation(), request.handle()));
   }
 
   public void subscribe(java.util.function.Consumer<TunnelEvent> listener) {
@@ -356,6 +375,7 @@ public final class TunnelRuntimeManager implements AutoCloseable {
 
   @Override
   public void close() {
+    if (!closed.compareAndSet(false, true)) return;
     slots.keySet().forEach(this::stop);
     executor.close();
   }
@@ -364,6 +384,8 @@ public final class TunnelRuntimeManager implements AutoCloseable {
   public interface Sleeper {
     void sleep(long millis) throws InterruptedException;
   }
+
+  private record ResumeRequest(Slot slot, long generation, TunnelHandle handle) {}
 
   private static final class Slot {
     private final UUID tunnelId;

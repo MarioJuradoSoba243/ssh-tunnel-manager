@@ -1,6 +1,7 @@
 package com.ssh.tunnelmanager.application.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.ssh.tunnelmanager.application.ssh.ConnectionTestResult;
 import com.ssh.tunnelmanager.application.ssh.SshTunnelEngine;
@@ -94,6 +95,35 @@ class TunnelRuntimeManagerTest {
 
     assertThat(sleeps).containsExactly(2_000L);
     assertThat(engine.openCount()).isEqualTo(2);
+  }
+
+  @Test
+  void resumeUsesTheNormalReconnectPolicyAndKeepsStartedAt() throws Exception {
+    FakeEngine engine = new FakeEngine();
+    List<Long> sleeps = new CopyOnWriteArrayList<>();
+    manager =
+        new TunnelRuntimeManager(
+            engine, ignored -> request(), new ApplicationEventPublisher(), 1, 1, sleeps::add);
+    UUID tunnelId = UUID.randomUUID();
+
+    manager.start(tunnelId);
+    awaitState(tunnelId, ActualState.OPEN);
+    var startedAt = manager.runtime(tunnelId).startedAt();
+    manager.onResume();
+    awaitState(tunnelId, ActualState.OPEN);
+
+    assertThat(sleeps).containsExactly(2_000L);
+    assertThat(manager.runtime(tunnelId).startedAt()).isEqualTo(startedAt);
+    assertThat(engine.openCount()).isEqualTo(2);
+  }
+
+  @Test
+  void aClosedManagerRejectsNewStarts() {
+    manager = newManager(new FakeEngine(), ignored -> request());
+    manager.close();
+
+    assertThatThrownBy(() -> manager.start(UUID.randomUUID()))
+        .isInstanceOf(IllegalStateException.class);
   }
 
   @Test

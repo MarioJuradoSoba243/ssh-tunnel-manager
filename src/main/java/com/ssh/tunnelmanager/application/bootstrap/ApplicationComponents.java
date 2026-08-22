@@ -1,21 +1,25 @@
 package com.ssh.tunnelmanager.application.bootstrap;
 
+import com.ssh.tunnelmanager.application.diagnostics.DiagnosticPort;
 import com.ssh.tunnelmanager.application.group.DeleteTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.DuplicateTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.GroupStatusService;
 import com.ssh.tunnelmanager.application.group.SaveTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StartGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StopGroupUseCase;
+import com.ssh.tunnelmanager.application.notifications.NotificationPort;
 import com.ssh.tunnelmanager.application.organization.DeleteEnvironmentUseCase;
 import com.ssh.tunnelmanager.application.organization.DeleteProjectUseCase;
 import com.ssh.tunnelmanager.application.organization.DeleteTagUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveEnvironmentUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveProjectUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveTagUseCase;
+import com.ssh.tunnelmanager.application.persistence.ApplicationSettingsRepository;
 import com.ssh.tunnelmanager.application.persistence.BulkWorkspaceRepository;
 import com.ssh.tunnelmanager.application.persistence.ConfigurationStore;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
 import com.ssh.tunnelmanager.application.persistence.EnvironmentRepository;
+import com.ssh.tunnelmanager.application.persistence.KeyboardShortcutRepository;
 import com.ssh.tunnelmanager.application.persistence.ProjectRepository;
 import com.ssh.tunnelmanager.application.persistence.RecentItemRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
@@ -28,6 +32,9 @@ import com.ssh.tunnelmanager.application.portability.ExportConfigurationUseCase;
 import com.ssh.tunnelmanager.application.portability.ImportConfigurationUseCase;
 import com.ssh.tunnelmanager.application.portability.RestoreBackupUseCase;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
+import com.ssh.tunnelmanager.application.settings.ApplicationSettingsService;
+import com.ssh.tunnelmanager.application.settings.LoggingLevelPort;
+import com.ssh.tunnelmanager.application.settings.ShortcutRegistry;
 import com.ssh.tunnelmanager.application.ssh.SshTunnelEngine;
 import com.ssh.tunnelmanager.application.tunnel.DeleteSshHostUseCase;
 import com.ssh.tunnelmanager.application.tunnel.DeleteTunnelUseCase;
@@ -74,6 +81,13 @@ public record ApplicationComponents(
     SaveTagUseCase saveTag,
     DeleteTagUseCase deleteTag,
     ConfigurationStore configurationStore,
+    ApplicationSettingsRepository settingsRepository,
+    KeyboardShortcutRepository keyboardShortcutRepository,
+    ApplicationSettingsService settings,
+    ShortcutRegistry shortcuts,
+    LoggingLevelPort loggingLevel,
+    DiagnosticPort diagnostics,
+    NotificationPort notifications,
     ExportConfigurationUseCase exportConfiguration,
     ImportConfigurationUseCase importConfiguration,
     RestoreBackupUseCase restoreBackup,

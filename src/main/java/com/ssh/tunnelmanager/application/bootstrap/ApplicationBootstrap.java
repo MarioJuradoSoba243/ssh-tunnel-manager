@@ -1,11 +1,13 @@
 package com.ssh.tunnelmanager.application.bootstrap;
 
+import com.ssh.tunnelmanager.application.diagnostics.DiagnosticPort;
 import com.ssh.tunnelmanager.application.group.DeleteTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.DuplicateTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.GroupStatusService;
 import com.ssh.tunnelmanager.application.group.SaveTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StartGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StopGroupUseCase;
+import com.ssh.tunnelmanager.application.notifications.NotificationPort;
 import com.ssh.tunnelmanager.application.organization.ClassificationUsageService;
 import com.ssh.tunnelmanager.application.organization.DeleteEnvironmentUseCase;
 import com.ssh.tunnelmanager.application.organization.DeleteProjectUseCase;
@@ -13,10 +15,12 @@ import com.ssh.tunnelmanager.application.organization.DeleteTagUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveEnvironmentUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveProjectUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveTagUseCase;
+import com.ssh.tunnelmanager.application.persistence.ApplicationSettingsRepository;
 import com.ssh.tunnelmanager.application.persistence.BulkWorkspaceRepository;
 import com.ssh.tunnelmanager.application.persistence.ConfigurationStore;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
 import com.ssh.tunnelmanager.application.persistence.EnvironmentRepository;
+import com.ssh.tunnelmanager.application.persistence.KeyboardShortcutRepository;
 import com.ssh.tunnelmanager.application.persistence.ProjectRepository;
 import com.ssh.tunnelmanager.application.persistence.RecentItemRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
@@ -32,6 +36,9 @@ import com.ssh.tunnelmanager.application.portability.RuntimeControl;
 import com.ssh.tunnelmanager.application.recent.RecentItemService;
 import com.ssh.tunnelmanager.application.runtime.ApplicationEventPublisher;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
+import com.ssh.tunnelmanager.application.settings.ApplicationSettingsService;
+import com.ssh.tunnelmanager.application.settings.LoggingLevelPort;
+import com.ssh.tunnelmanager.application.settings.ShortcutRegistry;
 import com.ssh.tunnelmanager.application.shell.NavigationItem;
 import com.ssh.tunnelmanager.application.shell.ShellViewModel;
 import com.ssh.tunnelmanager.application.ssh.HostKeyApprovalCoordinator;
@@ -46,6 +53,8 @@ import com.ssh.tunnelmanager.application.tunnel.SaveTunnelUseCase;
 import com.ssh.tunnelmanager.application.tunnel.StartTunnelUseCase;
 import com.ssh.tunnelmanager.application.tunnel.StopTunnelUseCase;
 import com.ssh.tunnelmanager.application.tunnel.TestTunnelConnectionUseCase;
+import com.ssh.tunnelmanager.infrastructure.diagnostics.ZipDiagnosticService;
+import com.ssh.tunnelmanager.infrastructure.logging.LoggingLevelController;
 import com.ssh.tunnelmanager.infrastructure.persistence.DataDirectories;
 import com.ssh.tunnelmanager.infrastructure.persistence.DataDirectoryResolver;
 import com.ssh.tunnelmanager.infrastructure.persistence.DatabaseFactory;
@@ -53,10 +62,12 @@ import com.ssh.tunnelmanager.infrastructure.persistence.PersistenceException;
 import com.ssh.tunnelmanager.infrastructure.persistence.StorageMode;
 import com.ssh.tunnelmanager.infrastructure.persistence.backup.BackupService;
 import com.ssh.tunnelmanager.infrastructure.persistence.migration.DatabaseMigrator;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcApplicationSettingsRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcBulkWorkspaceRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcConfigurationStore;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcCredentialRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcEnvironmentRepository;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcKeyboardShortcutRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcProjectRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcRecentItemRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcSshHostRepository;
@@ -64,6 +75,7 @@ import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTagReposi
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTrustedHostKeyRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTunnelRepository;
 import com.ssh.tunnelmanager.infrastructure.ssh.MinaSshTunnelEngine;
+import com.ssh.tunnelmanager.infrastructure.windows.WindowsNotificationService;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -106,7 +118,10 @@ public final class ApplicationBootstrap {
         credentialRepository,
         trustedHostKeys,
         groupRepository,
-        noOpBackups());
+        noOpBackups(),
+        noOpDiagnostics(),
+        null,
+        noOpNotifications());
   }
 
   private ApplicationComponents createComponents(
@@ -117,7 +132,10 @@ public final class ApplicationBootstrap {
       CredentialRepository credentialRepository,
       com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository trustedHostKeys,
       TunnelGroupRepository groupRepository,
-      BackupPort backups) {
+      BackupPort backups,
+      DiagnosticPort diagnostics,
+      DataDirectories diagnosticDirectories,
+      NotificationPort notifications) {
     var requestProvider =
         new PersistentTunnelRequestProvider(tunnelRepository, hostRepository, credentialRepository);
     var events = new ApplicationEventPublisher();
@@ -131,6 +149,32 @@ public final class ApplicationBootstrap {
         new JdbcBulkWorkspaceRepository(database, backups::markDirty);
     ConfigurationStore configurationStore =
         new JdbcConfigurationStore(database, backups::markDirty);
+    ApplicationSettingsRepository settingsRepository =
+        new JdbcApplicationSettingsRepository(database, backups::markDirty);
+    KeyboardShortcutRepository keyboardShortcutRepository =
+        new JdbcKeyboardShortcutRepository(database, backups::markDirty);
+    ShortcutRegistry shortcuts = new ShortcutRegistry(keyboardShortcutRepository);
+    ApplicationSettingsService settings =
+        new ApplicationSettingsService(settingsRepository, shortcuts);
+    NotificationPort effectiveNotifications =
+        diagnosticDirectories == null
+            ? notifications
+            : new WindowsNotificationService(settings::notificationsEnabled);
+    LoggingLevelPort loggingLevel =
+        diagnosticDirectories == null ? level -> {} : LoggingLevelController::apply;
+    events.subscribe(
+        event -> {
+          if (event
+              instanceof com.ssh.tunnelmanager.application.runtime.TunnelEvent.TunnelError error) {
+            effectiveNotifications.notify(
+                "Error en túnel", "Túnel " + error.tunnelId() + ": " + safeMessage(error.error()));
+          }
+        });
+    DiagnosticPort effectiveDiagnostics =
+        diagnosticDirectories == null
+            ? diagnostics
+            : new ZipDiagnosticService(
+                configurationStore, runtime, diagnosticDirectories, applicationInfo.version());
     var recents = new RecentItemService(recentItems);
     var usage = new ClassificationUsageService(tunnelRepository, groupRepository);
     var saveGroup = new SaveTunnelGroupUseCase(groupRepository, tunnelRepository);
@@ -169,6 +213,13 @@ public final class ApplicationBootstrap {
         new SaveTagUseCase(tags),
         new DeleteTagUseCase(tags, usage),
         configurationStore,
+        settingsRepository,
+        keyboardShortcutRepository,
+        settings,
+        shortcuts,
+        loggingLevel,
+        effectiveDiagnostics,
+        effectiveNotifications,
         new ExportConfigurationUseCase(
             configurationStore, new ConfigurationJsonCodec(), applicationInfo.version()),
         new ImportConfigurationUseCase(
@@ -196,21 +247,23 @@ public final class ApplicationBootstrap {
     ApplicationBootstrap bootstrap = new ApplicationBootstrap(info);
     bootstrap.components =
         bootstrap.createComponents(
-            database, engine, tunnels, hosts, credentials, trustedKeys, groups, backups);
+            database,
+            engine,
+            tunnels,
+            hosts,
+            credentials,
+            trustedKeys,
+            groups,
+            backups,
+            noOpDiagnostics(),
+            directories,
+            noOpNotifications());
     return bootstrap;
   }
 
   public static ApplicationBootstrap productionDefault(
       ApplicationInfo info, HostKeyApprovalCoordinator approvals) {
-    Path applicationDirectory = applicationDirectory();
-    String localAppData =
-        System.getenv().getOrDefault("LOCALAPPDATA", applicationDirectory.toString());
-    StorageMode mode =
-        java.nio.file.Files.exists(applicationDirectory.resolve("portable.flag"))
-            ? StorageMode.PORTABLE
-            : StorageMode.INSTALLED;
-    DataDirectories directories =
-        DataDirectoryResolver.resolve(mode, applicationDirectory, Path.of(localAppData));
+    DataDirectories directories = defaultDirectories();
     try {
       return production(info, directories, approvals);
     } catch (PersistenceException exception) {
@@ -235,6 +288,21 @@ public final class ApplicationBootstrap {
         .map(Path::getParent)
         .filter(path -> java.nio.file.Files.exists(path.resolve("portable.flag")))
         .orElse(workingDirectory);
+  }
+
+  public static Path defaultApplicationDirectory() {
+    return applicationDirectory();
+  }
+
+  public static DataDirectories defaultDirectories() {
+    Path applicationDirectory = applicationDirectory();
+    String localAppData =
+        System.getenv().getOrDefault("LOCALAPPDATA", applicationDirectory.toString());
+    StorageMode mode =
+        java.nio.file.Files.exists(applicationDirectory.resolve("portable.flag"))
+            ? StorageMode.PORTABLE
+            : StorageMode.INSTALLED;
+    return DataDirectoryResolver.resolve(mode, applicationDirectory, Path.of(localAppData));
   }
 
   private ApplicationComponents components;
@@ -297,6 +365,36 @@ public final class ApplicationBootstrap {
         }
       }
     };
+  }
+
+  private static DiagnosticPort noOpDiagnostics() {
+    return new PlaceholderDiagnosticPort();
+  }
+
+  private static NotificationPort noOpNotifications() {
+    return new NotificationPort() {
+      @Override
+      public void notify(String title, String message) {}
+    };
+  }
+
+  private static String safeMessage(Throwable error) {
+    String message = error.getMessage();
+    return message == null
+        ? error.getClass().getSimpleName()
+        : message.replaceAll("(?i)password\\s*[=:]\\s*\\S+", "password=[REDACTED]");
+  }
+
+  private static final class PlaceholderDiagnosticPort implements DiagnosticPort {
+    @Override
+    public Path export(Path target) {
+      throw new UnsupportedOperationException("Diagnóstico no configurado");
+    }
+
+    @Override
+    public Path logsDirectory() {
+      return Path.of(".");
+    }
   }
 
   private static BackupPort noOpBackups() {
