@@ -1,6 +1,7 @@
 package com.ssh.tunnelmanager.ui.shell;
 
 import com.ssh.tunnelmanager.application.bootstrap.ApplicationComponents;
+import com.ssh.tunnelmanager.application.error.ErrorPresentation;
 import com.ssh.tunnelmanager.application.group.GroupConflictException;
 import com.ssh.tunnelmanager.application.group.GroupEditorViewModel;
 import com.ssh.tunnelmanager.application.group.GroupListViewModel;
@@ -18,6 +19,7 @@ import com.ssh.tunnelmanager.application.portability.ConflictKey;
 import com.ssh.tunnelmanager.application.portability.ImportConflict;
 import com.ssh.tunnelmanager.application.portability.ImportSession;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntime;
+import com.ssh.tunnelmanager.application.settings.ShortcutAction;
 import com.ssh.tunnelmanager.application.shell.NavigationItem;
 import com.ssh.tunnelmanager.application.shell.ShellViewModel;
 import com.ssh.tunnelmanager.application.tunnel.TunnelEditorViewModel;
@@ -35,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javafx.animation.KeyFrame;
@@ -100,6 +103,7 @@ public final class ShellController implements AutoCloseable {
   private Timeline statusRefresh;
   private boolean editingTunnel;
   private boolean editingGroup;
+  private Consumer<com.ssh.tunnelmanager.ui.theme.ThemePreference> themeApplier = ignored -> {};
 
   public ShellController(ShellViewModel viewModel) {
     this(viewModel, null);
@@ -164,6 +168,11 @@ public final class ShellController implements AutoCloseable {
     }
   }
 
+  public void setThemeApplier(
+      Consumer<com.ssh.tunnelmanager.ui.theme.ThemePreference> themeApplier) {
+    this.themeApplier = Objects.requireNonNull(themeApplier);
+  }
+
   @FXML
   private void initialize() {
     navigationList.getItems().setAll(shellViewModel.navigationItems());
@@ -193,14 +202,48 @@ public final class ShellController implements AutoCloseable {
                 scene.addEventFilter(
                     javafx.scene.input.KeyEvent.KEY_PRESSED,
                     event -> {
-                      if (event.isControlDown()
-                          && event.getCode() == javafx.scene.input.KeyCode.K) {
+                      if (components == null) return;
+                      if (components.shortcuts().matches(ShortcutAction.GLOBAL_SEARCH, event)) {
                         event.consume();
                         showGlobalSearch();
+                      } else if (components.shortcuts().matches(ShortcutAction.NEW_TUNNEL, event)) {
+                        event.consume();
+                        selectSection("tunnels");
+                        Platform.runLater(() -> openTunnelEditor(tunnelTable, null));
+                      } else if (components
+                          .shortcuts()
+                          .matches(ShortcutAction.FILTER_VIEW, event)) {
+                        event.consume();
+                        if (tunnelSearch != null) tunnelSearch.requestFocus();
+                      } else if (components
+                          .shortcuts()
+                          .matches(ShortcutAction.REFRESH_VIEW, event)) {
+                        event.consume();
+                        refreshCurrentSection();
+                      } else if (components
+                          .shortcuts()
+                          .matches(ShortcutAction.OPEN_SELECTION, event)) {
+                        event.consume();
+                        if (tunnelTable != null)
+                          openTunnelEditor(
+                              tunnelTable, tunnelTable.getSelectionModel().getSelectedItem());
+                      } else if (components
+                          .shortcuts()
+                          .matches(ShortcutAction.CLOSE_OVERLAY, event)) {
+                        event.consume();
+                        if (editingTunnel) showTunnels();
+                        else if (editingGroup) showGroups();
                       }
                     });
               }
             });
+  }
+
+  private void selectSection(String id) {
+    navigationList.getItems().stream()
+        .filter(item -> item.id().equals(id))
+        .findFirst()
+        .ifPresent(item -> navigationList.getSelectionModel().select(item));
   }
 
   private void showSection(NavigationItem item) {
@@ -431,25 +474,112 @@ public final class ShellController implements AutoCloseable {
 
   private void showSettings() {
     sectionDescription.setText(
-        "Exporta, importa y recupera la configuración sin incluir estados runtime.");
+        "Ajustes de apariencia, notificaciones, teclado, diagnóstico y configuración.");
     if (components == null) return;
     Button export = new Button("Exportar configuración JSON");
     Button importButton = new Button("Importar configuración JSON");
     Button backups = new Button("Ver backups y restaurar");
+    Button diagnostic = new Button("Exportar diagnóstico ZIP");
+    Button logs = new Button("Abrir carpeta de logs");
+    ComboBox<String> theme = new ComboBox<>();
+    theme.getItems().setAll("LIGHT", "DARK", "SYSTEM");
+    theme.setValue(components.settings().theme());
+    theme.setOnAction(
+        event -> {
+          components.settings().setTheme(theme.getValue());
+          themeApplier.accept(
+              com.ssh.tunnelmanager.ui.theme.ThemePreference.valueOf(theme.getValue()));
+        });
+    CheckBox notifications = new CheckBox("Notificaciones Windows");
+    notifications.setSelected(components.settings().notificationsEnabled());
+    notifications.setOnAction(
+        event -> components.settings().setNotificationsEnabled(notifications.isSelected()));
+    ComboBox<String> logging = new ComboBox<>();
+    logging.getItems().setAll("TRACE", "DEBUG", "INFO", "WARN", "ERROR");
+    logging.setValue(components.settings().loggingLevel());
+    logging.setOnAction(
+        event -> {
+          components.settings().setLoggingLevel(logging.getValue());
+          components.loggingLevel().apply(logging.getValue());
+        });
+    GridPane shortcuts = new GridPane();
+    shortcuts.setHgap(8);
+    shortcuts.setVgap(6);
+    Map<ShortcutAction, TextField> shortcutFields = new java.util.EnumMap<>(ShortcutAction.class);
+    int row = 0;
+    for (ShortcutAction action : ShortcutAction.values()) {
+      TextField field = new TextField(components.shortcuts().load().get(action));
+      shortcutFields.put(action, field);
+      shortcuts.add(new Label(action.label()), 0, row);
+      shortcuts.add(field, 1, row++);
+    }
+    Button saveShortcuts = new Button("Guardar atajos");
+    saveShortcuts.setOnAction(
+        event -> {
+          try {
+            Map<ShortcutAction, String> values = new java.util.EnumMap<>(ShortcutAction.class);
+            shortcutFields.forEach((action, field) -> values.put(action, field.getText()));
+            components.settings().setShortcuts(values);
+            showInfo("Atajos guardados", "Los cambios se aplicarán a la navegación.");
+          } catch (RuntimeException exception) {
+            showError("No se pudieron guardar los atajos", exception);
+          }
+        });
     export.setOnAction(event -> exportConfiguration());
     importButton.setOnAction(event -> importConfiguration());
     backups.setOnAction(event -> restoreBackup());
+    diagnostic.setOnAction(event -> exportDiagnostic());
+    logs.setOnAction(event -> openLogsFolder());
     contentContainer
         .getChildren()
         .add(
             new VBox(
                 12,
+                new Label("Tema"),
+                theme,
+                notifications,
+                new Label("Nivel de logging"),
+                logging,
+                new Label("Atajos de teclado"),
+                shortcuts,
+                saveShortcuts,
                 new Label(
                     "La exportación completa contiene contraseñas recuperables. "
                         + "Guárdala solo en un lugar seguro."),
                 export,
                 importButton,
-                backups));
+                backups,
+                diagnostic,
+                logs));
+  }
+
+  private void exportDiagnostic() {
+    javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+    chooser.setTitle("Exportar diagnóstico");
+    chooser.setInitialFileName("ssh-tunnel-manager-diagnostic.zip");
+    chooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("ZIP", "*.zip"));
+    java.io.File selected = chooser.showSaveDialog(contentContainer.getScene().getWindow());
+    if (selected == null) return;
+    workers.submit(
+        () -> {
+          try {
+            components.diagnostics().export(selected.toPath());
+            Platform.runLater(() -> showInfo("Diagnóstico exportado", selected.getPath()));
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudo exportar el diagnóstico", exception));
+          }
+        });
+  }
+
+  private void openLogsFolder() {
+    workers.submit(
+        () -> {
+          try {
+            java.awt.Desktop.getDesktop().open(components.diagnostics().logsDirectory().toFile());
+          } catch (java.io.IOException | UnsupportedOperationException exception) {
+            Platform.runLater(() -> showError("No se pudo abrir la carpeta de logs", exception));
+          }
+        });
   }
 
   private void exportConfiguration() {
@@ -1807,8 +1937,14 @@ public final class ShellController implements AutoCloseable {
                     new Alert(
                         result.successful() ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR);
                 alert.setTitle("Probar conexión");
-                alert.setHeaderText(result.message());
-                alert.setContentText(result.technicalDetails());
+                alert.setHeaderText(
+                    result.successful()
+                        ? result.message()
+                        : ErrorPresentation.friendly(new IllegalStateException(result.message())));
+                alert.setContentText(
+                    result.successful()
+                        ? result.technicalDetails()
+                        : ErrorPresentation.sanitize(result.technicalDetails()));
                 if (!result.successful()) {
                   ButtonType copy = new ButtonType("Copiar error");
                   alert.getButtonTypes().add(copy);
@@ -1816,7 +1952,9 @@ public final class ShellController implements AutoCloseable {
                       .showAndWait()
                       .ifPresent(
                           button -> {
-                            if (button == copy) copyToClipboard(result.technicalDetails());
+                            if (button == copy)
+                              copyToClipboard(
+                                  ErrorPresentation.sanitize(result.technicalDetails()));
                           });
                 } else {
                   alert.showAndWait();
@@ -1829,7 +1967,13 @@ public final class ShellController implements AutoCloseable {
     if (selected == null) return;
     TunnelRuntime runtime = tunnels.runtime(selected.id());
     String error =
-        runtime.lastError() == null ? "Sin error técnico." : stackTrace(runtime.lastError());
+        runtime.lastError() == null
+            ? "Sin error técnico."
+            : ErrorPresentation.technical(
+                selected.id(),
+                runtime.actualState().name(),
+                routeDescription(selected),
+                runtime.lastError());
     String events =
         runtime.sessionEvents().isEmpty()
             ? "Sin eventos en esta sesión."
@@ -1850,6 +1994,19 @@ public final class ShellController implements AutoCloseable {
 
   private void operateTunnel(TunnelRecord selected, java.util.function.Consumer<UUID> operation) {
     if (selected != null) workers.submit(() -> operation.accept(selected.id()));
+  }
+
+  private static String routeDescription(TunnelRecord tunnel) {
+    return "jump1="
+        + tunnel.jump1HostId()
+        + ",jump2="
+        + tunnel.jump2HostId()
+        + ",final="
+        + tunnel.finalHostId()
+        + ",destination="
+        + tunnel.destinationHost()
+        + ":"
+        + tunnel.destinationPort();
   }
 
   private static ComboBox<SshHostRecord> hostCombo(List<SshHostRecord> hosts, UUID selected) {
@@ -2065,9 +2222,31 @@ public final class ShellController implements AutoCloseable {
   }
 
   private void showError(String header, Throwable exception) {
-    Alert alert = new Alert(Alert.AlertType.ERROR, exception.getMessage());
+    Alert alert = new Alert(Alert.AlertType.ERROR, ErrorPresentation.friendly(exception));
     alert.setHeaderText(header);
-    alert.showAndWait();
+    ButtonType copy = new ButtonType("Copiar error");
+    ButtonType details = new ButtonType("Ver detalles", ButtonBar.ButtonData.HELP);
+    alert.getButtonTypes().addAll(details, copy);
+    alert
+        .showAndWait()
+        .ifPresent(
+            result -> {
+              if (result == copy) copyToClipboard(ErrorPresentation.technical(exception));
+              if (result == details) showTechnicalError(ErrorPresentation.technical(exception));
+            });
+  }
+
+  private void showTechnicalError(String details) {
+    Alert technical = new Alert(Alert.AlertType.INFORMATION, details);
+    technical.setHeaderText("Detalles técnicos");
+    ButtonType copy = new ButtonType("Copiar error");
+    technical.getButtonTypes().add(copy);
+    technical
+        .showAndWait()
+        .ifPresent(
+            result -> {
+              if (result == copy) copyToClipboard(details);
+            });
   }
 
   private void showInfo(String header, String message) {
@@ -2079,12 +2258,6 @@ public final class ShellController implements AutoCloseable {
   private static void copyToClipboard(String value) {
     javafx.scene.input.Clipboard.getSystemClipboard()
         .setContent(java.util.Map.of(javafx.scene.input.DataFormat.PLAIN_TEXT, value));
-  }
-
-  private static String stackTrace(Throwable error) {
-    java.io.StringWriter buffer = new java.io.StringWriter();
-    error.printStackTrace(new java.io.PrintWriter(buffer));
-    return buffer.toString();
   }
 
   private void stopStatusRefresh() {
