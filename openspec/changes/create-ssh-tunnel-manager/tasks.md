@@ -148,28 +148,28 @@
 
 ## 5. Milestone 0.2.0 — grupos y operación masiva
 
-- [ ] 5.1 Completar el modelo de dominio de `TunnelGroup`.
-- [ ] 5.2 Implementar casos de uso crear, editar, duplicar y eliminar grupos.
-- [ ] 5.3 Implementar relación muchos-a-muchos sin ownership.
-- [ ] 5.4 Implementar validación/advertencia previa por conflictos de endpoint local dentro de un grupo.
-- [ ] 5.5 Implementar `StartGroupUseCase` usando `TunnelRuntimeManager`.
-- [ ] 5.6 No reiniciar túneles que ya estén activos al iniciar un grupo.
-- [ ] 5.7 Implementar `StopGroupUseCase` deteniendo miembros aunque pertenezcan a otros grupos.
-- [ ] 5.8 Implementar `operationId` para operaciones masivas.
-- [ ] 5.9 Implementar `GroupStartCompleted` y resumen del intento inicial.
-- [ ] 5.10 Implementar progreso por conteos OPEN/CONNECTING/QUEUED/ERROR.
-- [ ] 5.11 Implementar estado resumido de grupo derivado de sus miembros.
-- [ ] 5.12 Implementar editor de grupo como pantalla completa dentro del shell.
-- [ ] 5.13 Implementar búsqueda y selección de túneles dentro del editor de grupo.
-- [ ] 5.14 Implementar iniciar/detener grupo desde la UI sin modal bloqueante.
-- [ ] 5.15 Implementar cancelación de túneles queued/connecting mediante `Detener grupo`.
-- [ ] 5.16 Añadir tests de concurrencia con límite configurable.
-- [ ] 5.17 Añadir tests de túnel compartido entre varios grupos.
-- [ ] 5.18 Añadir tests de fallo independiente de un miembro del grupo.
-- [ ] 5.19 Añadir tests de parada de grupo sin reference counting.
-- [ ] 5.20 Documentar grupos, conflictos locales, progreso y semántica de túneles compartidos.
-- [ ] 5.21 Generar y verificar instalador/portable `0.2.0`.
-- [ ] 5.22 Ejecutar `.\mvnw.cmd verify`.
+- [x] 5.1 Completar el modelo de dominio de `TunnelGroup`.
+- [x] 5.2 Implementar casos de uso crear, editar, duplicar y eliminar grupos.
+- [x] 5.3 Implementar relación muchos-a-muchos sin ownership.
+- [x] 5.4 Implementar validación/advertencia previa por conflictos de endpoint local dentro de un grupo.
+- [x] 5.5 Implementar `StartGroupUseCase` usando `TunnelRuntimeManager`.
+- [x] 5.6 No reiniciar túneles que ya estén activos al iniciar un grupo.
+- [x] 5.7 Implementar `StopGroupUseCase` deteniendo miembros aunque pertenezcan a otros grupos.
+- [x] 5.8 Implementar `operationId` para operaciones masivas.
+- [x] 5.9 Implementar `GroupStartCompleted` y resumen del intento inicial.
+- [x] 5.10 Implementar progreso por conteos OPEN/CONNECTING/QUEUED/ERROR.
+- [x] 5.11 Implementar estado resumido de grupo derivado de sus miembros.
+- [x] 5.12 Implementar editor de grupo como pantalla completa dentro del shell.
+- [x] 5.13 Implementar búsqueda y selección de túneles dentro del editor de grupo.
+- [x] 5.14 Implementar iniciar/detener grupo desde la UI sin modal bloqueante.
+- [x] 5.15 Implementar cancelación de túneles queued/connecting mediante `Detener grupo`.
+- [x] 5.16 Añadir tests de concurrencia con límite configurable.
+- [x] 5.17 Añadir tests de túnel compartido entre varios grupos.
+- [x] 5.18 Añadir tests de fallo independiente de un miembro del grupo.
+- [x] 5.19 Añadir tests de parada de grupo sin reference counting.
+- [x] 5.20 Documentar grupos, conflictos locales, progreso y semántica de túneles compartidos.
+- [x] 5.21 Generar y verificar instalador/portable `0.2.0`.
+- [x] 5.22 Ejecutar `.\mvnw.cmd verify`.
 
 ## 6. Milestone 0.3.0 — Hub, organización y gestión de gran volumen
 
