@@ -23,10 +23,10 @@
 - [x] 1.12 Añadir `base.css`, `light.css` y `dark.css` con una primera infraestructura de tema.
 - [x] 1.13 Crear una prueba smoke de arranque JavaFX.
 - [x] 1.14 Crear GitHub Actions para compile, format check, unit tests, SQLite-independent tests y ArchUnit.
-- [x] 1.15 Crear un primer job Windows de `jpackage` que produzca una application image mínima.
-- [x] 1.16 Generar un instalador Windows mínimo mediante `jpackage` y verificar que no requiere un JRE/JDK externo.
-- [x] 1.17 Generar un ZIP portable mínimo a partir de la application image.
-- [x] 1.18 Documentar en `README.md` los comandos de build/test/package realmente disponibles tras el bootstrap.
+- [x] 1.15 Crear un primer job Windows de `jpackage` que produzca una application image mínima; la image corregida se ejecutó y permaneció activa durante la validación.
+- [ ] 1.16 Generar un instalador Windows mínimo mediante `jpackage` y verificar que no requiere un JRE/JDK externo. Pendiente de revalidar el instalador después de corregir el launcher.
+- [x] 1.17 Generar un ZIP portable mínimo a partir de la application image; el ZIP corregido se extrajo y su ejecutable permaneció activo durante la validación.
+- [x] 1.18 Documentar en `README.md` los comandos de build/test/package y ejecución IntelliJ realmente disponibles tras el bootstrap.
 - [x] 1.19 Ejecutar Spotless y `.\mvnw.cmd verify`.
 - [ ] 1.20 Marcar la Fase 1 completada solo si CI y los smoke builds de packaging son reproducibles. Pendiente de ejecutar el workflow en GitHub Actions; los jobs equivalentes y packaging local pasan.
 

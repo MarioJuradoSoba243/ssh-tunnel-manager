@@ -113,6 +113,45 @@ Los comandos canónicos del bootstrap son:
 
 El wrapper descarga Maven 3.9.11 y el proyecto requiere un JDK 25.
 
+## Ejecutar durante el desarrollo
+
+El launcher de desarrollo es:
+
+```text
+com.ssh.tunnelmanager.ui.ApplicationLauncher
+```
+
+Desde PowerShell, situado en la raíz del repositorio:
+
+```powershell
+.\mvnw.cmd javafx:run
+```
+
+Para ejecutar y depurar desde IntelliJ IDEA:
+
+1. Abre la raíz del repositorio y deja que IntelliJ importe el proyecto como Maven.
+2. Configura el Project SDK y el SDK del módulo con un JDK 25.
+3. Crea una configuración **Application** con estos valores:
+   - **Main class:** `com.ssh.tunnelmanager.ui.ApplicationLauncher`
+   - **Use classpath of module:** `ssh-tunnel-manager`
+   - **JRE:** el JDK 25 configurado para el proyecto
+   - **Working directory:** la raíz del repositorio
+   - **VM options:** ninguna; no añadas opciones `--module-path` ni `--add-modules`
+4. Pulsa **Run** para ejecutar o **Debug** para depurar. Los breakpoints pueden
+   colocarse en `ApplicationLauncher`, `SshTunnelManagerApplication` o cualquier
+   clase de la aplicación.
+
+También puedes crear una configuración **Maven** con:
+
+```text
+Command line: javafx:run
+```
+
+No uses `SshTunnelManagerApplication` como Main class de jpackage o de la
+configuración **Application** de IntelliJ: esa clase es el `Application` JavaFX;
+`ApplicationLauncher` es el punto de entrada plano común a Maven, IntelliJ y el
+portable.
+
 Para generar la application image, el instalador `.exe` y el ZIP portable en Windows 11 x64:
 
 ```powershell
@@ -120,6 +159,15 @@ Para generar la application image, el instalador `.exe` y el ZIP portable en Win
 ```
 
 El script requiere `jpackage` de un JDK 25. La application image, el instalador y el ZIP portable se generan en `dist/`.
+
+El ejecutable del portable está en la raíz de la carpeta extraída:
+
+```powershell
+.\dist\ssh-tunnel-manager-0.1.0-windows-x64-portable\ssh-tunnel-manager.exe
+```
+
+Si se parte del ZIP, extráelo completamente antes de ejecutar el `.exe`; no
+ejecutes el archivo desde dentro del visor comprimido.
 
 Los cambios relacionados con SSH deberán ejecutar además los integration tests correspondientes.
 

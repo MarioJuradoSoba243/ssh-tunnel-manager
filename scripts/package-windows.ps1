@@ -17,6 +17,10 @@ $jarPath = Join-Path $targetDirectory "$appName-$version.jar"
 if (-not (Get-Command jpackage -ErrorAction SilentlyContinue)) {
     throw 'jpackage no está disponible. Ejecuta este script con un JDK 25 en PATH.'
 }
+$jpackageVersion = (& jpackage --version | Select-Object -First 1).Trim()
+if ($jpackageVersion -notmatch '^25\.') {
+    throw "jpackage requiere JDK 25; se ha encontrado la versión $jpackageVersion."
+}
 
 & (Join-Path $projectRoot 'mvnw.cmd') -B -DskipTests package
 if ($LASTEXITCODE -ne 0) {
@@ -42,7 +46,7 @@ function New-ApplicationImage {
         --app-version $version `
         --input $inputDirectory `
         --main-jar (Split-Path $jarPath -Leaf) `
-        --main-class com.ssh.tunnelmanager.ui.SshTunnelManagerApplication `
+        --main-class com.ssh.tunnelmanager.ui.ApplicationLauncher `
         --dest $distDirectory `
         --java-options '-Dfile.encoding=UTF-8'
     if ($LASTEXITCODE -ne 0) {
@@ -62,7 +66,7 @@ if ($Type -in @('installer', 'all')) {
         --app-version $version `
         --input $inputDirectory `
         --main-jar (Split-Path $jarPath -Leaf) `
-        --main-class com.ssh.tunnelmanager.ui.SshTunnelManagerApplication `
+        --main-class com.ssh.tunnelmanager.ui.ApplicationLauncher `
         --dest $distDirectory `
         --win-dir-chooser `
         --win-menu `
