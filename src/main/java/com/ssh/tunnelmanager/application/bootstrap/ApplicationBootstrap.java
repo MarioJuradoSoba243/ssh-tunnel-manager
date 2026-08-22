@@ -6,10 +6,23 @@ import com.ssh.tunnelmanager.application.group.GroupStatusService;
 import com.ssh.tunnelmanager.application.group.SaveTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StartGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StopGroupUseCase;
+import com.ssh.tunnelmanager.application.organization.ClassificationUsageService;
+import com.ssh.tunnelmanager.application.organization.DeleteEnvironmentUseCase;
+import com.ssh.tunnelmanager.application.organization.DeleteProjectUseCase;
+import com.ssh.tunnelmanager.application.organization.DeleteTagUseCase;
+import com.ssh.tunnelmanager.application.organization.SaveEnvironmentUseCase;
+import com.ssh.tunnelmanager.application.organization.SaveProjectUseCase;
+import com.ssh.tunnelmanager.application.organization.SaveTagUseCase;
+import com.ssh.tunnelmanager.application.persistence.BulkWorkspaceRepository;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
+import com.ssh.tunnelmanager.application.persistence.EnvironmentRepository;
+import com.ssh.tunnelmanager.application.persistence.ProjectRepository;
+import com.ssh.tunnelmanager.application.persistence.RecentItemRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
+import com.ssh.tunnelmanager.application.persistence.TagRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelGroupRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
+import com.ssh.tunnelmanager.application.recent.RecentItemService;
 import com.ssh.tunnelmanager.application.runtime.ApplicationEventPublisher;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
 import com.ssh.tunnelmanager.application.shell.NavigationItem;
@@ -31,8 +44,13 @@ import com.ssh.tunnelmanager.infrastructure.persistence.DataDirectoryResolver;
 import com.ssh.tunnelmanager.infrastructure.persistence.DatabaseFactory;
 import com.ssh.tunnelmanager.infrastructure.persistence.StorageMode;
 import com.ssh.tunnelmanager.infrastructure.persistence.migration.DatabaseMigrator;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcBulkWorkspaceRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcCredentialRepository;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcEnvironmentRepository;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcProjectRepository;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcRecentItemRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcSshHostRepository;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTagRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTrustedHostKeyRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTunnelRepository;
 import com.ssh.tunnelmanager.infrastructure.ssh.MinaSshTunnelEngine;
@@ -74,6 +92,13 @@ public final class ApplicationBootstrap {
         new PersistentTunnelRequestProvider(tunnelRepository, hostRepository, credentialRepository);
     var events = new ApplicationEventPublisher();
     var runtime = new TunnelRuntimeManager(engine, requestProvider, events, 8);
+    ProjectRepository projects = new JdbcProjectRepository(database);
+    EnvironmentRepository environments = new JdbcEnvironmentRepository(database);
+    TagRepository tags = new JdbcTagRepository(database);
+    RecentItemRepository recentItems = new JdbcRecentItemRepository(database);
+    BulkWorkspaceRepository bulkWorkspace = new JdbcBulkWorkspaceRepository(database);
+    var recents = new RecentItemService(recentItems);
+    var usage = new ClassificationUsageService(tunnelRepository, groupRepository);
     var saveGroup = new SaveTunnelGroupUseCase(groupRepository, tunnelRepository);
     return new ApplicationComponents(
         new SaveSshHostUseCase(hostRepository, credentialRepository),
@@ -81,7 +106,7 @@ public final class ApplicationBootstrap {
         new SaveTunnelUseCase(tunnelRepository),
         new DeleteTunnelUseCase(tunnelRepository, runtime),
         new DuplicateTunnelUseCase(tunnelRepository),
-        new StartTunnelUseCase(runtime),
+        new StartTunnelUseCase(runtime, recents),
         new StopTunnelUseCase(runtime),
         new RetryTunnelUseCase(runtime),
         new TestTunnelConnectionUseCase(engine, requestProvider),
@@ -95,9 +120,20 @@ public final class ApplicationBootstrap {
         saveGroup,
         new DeleteTunnelGroupUseCase(groupRepository),
         new DuplicateTunnelGroupUseCase(groupRepository),
-        new StartGroupUseCase(groupRepository, runtime, events),
+        new StartGroupUseCase(groupRepository, runtime, events, recents),
         new StopGroupUseCase(groupRepository, runtime),
-        new GroupStatusService(groupRepository, runtime));
+        new GroupStatusService(groupRepository, runtime),
+        projects,
+        environments,
+        tags,
+        recentItems,
+        bulkWorkspace,
+        new SaveProjectUseCase(projects),
+        new DeleteProjectUseCase(projects, usage),
+        new SaveEnvironmentUseCase(environments),
+        new DeleteEnvironmentUseCase(environments, usage),
+        new SaveTagUseCase(tags),
+        new DeleteTagUseCase(tags, usage));
   }
 
   public static ApplicationBootstrap production(

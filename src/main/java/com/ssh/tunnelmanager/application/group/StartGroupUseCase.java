@@ -1,6 +1,7 @@
 package com.ssh.tunnelmanager.application.group;
 
 import com.ssh.tunnelmanager.application.persistence.TunnelGroupRepository;
+import com.ssh.tunnelmanager.application.recent.RecentItemService;
 import com.ssh.tunnelmanager.application.runtime.GroupEvent;
 import com.ssh.tunnelmanager.application.runtime.TunnelEvent;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntime;
@@ -24,15 +25,25 @@ public final class StartGroupUseCase {
   private final TunnelGroupRepository groups;
   private final TunnelRuntimeManager runtime;
   private final com.ssh.tunnelmanager.application.runtime.ApplicationEventPublisher events;
+  private final RecentItemService recents;
   private final Map<UUID, List<Tracker>> trackersByTunnel = new HashMap<>();
 
   public StartGroupUseCase(
       TunnelGroupRepository groups,
       TunnelRuntimeManager runtime,
       com.ssh.tunnelmanager.application.runtime.ApplicationEventPublisher events) {
+    this(groups, runtime, events, null);
+  }
+
+  public StartGroupUseCase(
+      TunnelGroupRepository groups,
+      TunnelRuntimeManager runtime,
+      com.ssh.tunnelmanager.application.runtime.ApplicationEventPublisher events,
+      RecentItemService recents) {
     this.groups = groups;
     this.runtime = runtime;
     this.events = events;
+    this.recents = recents;
     runtime.subscribe(this::onTunnelEvent);
   }
 
@@ -52,6 +63,7 @@ public final class StartGroupUseCase {
         operationId,
         groupId,
         group.tunnelIds().size());
+    if (recents != null) recents.recordGroupStart(groupId);
     for (UUID tunnelId : group.tunnelIds()) {
       TunnelRuntime current = runtime.runtime(tunnelId);
       if (current.actualState() == ActualState.OPEN) {

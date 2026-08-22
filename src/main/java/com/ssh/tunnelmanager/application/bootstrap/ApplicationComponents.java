@@ -6,8 +6,19 @@ import com.ssh.tunnelmanager.application.group.GroupStatusService;
 import com.ssh.tunnelmanager.application.group.SaveTunnelGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StartGroupUseCase;
 import com.ssh.tunnelmanager.application.group.StopGroupUseCase;
+import com.ssh.tunnelmanager.application.organization.DeleteEnvironmentUseCase;
+import com.ssh.tunnelmanager.application.organization.DeleteProjectUseCase;
+import com.ssh.tunnelmanager.application.organization.DeleteTagUseCase;
+import com.ssh.tunnelmanager.application.organization.SaveEnvironmentUseCase;
+import com.ssh.tunnelmanager.application.organization.SaveProjectUseCase;
+import com.ssh.tunnelmanager.application.organization.SaveTagUseCase;
+import com.ssh.tunnelmanager.application.persistence.BulkWorkspaceRepository;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
+import com.ssh.tunnelmanager.application.persistence.EnvironmentRepository;
+import com.ssh.tunnelmanager.application.persistence.ProjectRepository;
+import com.ssh.tunnelmanager.application.persistence.RecentItemRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
+import com.ssh.tunnelmanager.application.persistence.TagRepository;
 import com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelGroupRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
@@ -45,4 +56,15 @@ public record ApplicationComponents(
     DuplicateTunnelGroupUseCase duplicateGroup,
     StartGroupUseCase startGroup,
     StopGroupUseCase stopGroup,
-    GroupStatusService groupStatus) {}
+    GroupStatusService groupStatus,
+    ProjectRepository projectRepository,
+    EnvironmentRepository environmentRepository,
+    TagRepository tagRepository,
+    RecentItemRepository recentItemRepository,
+    BulkWorkspaceRepository bulkWorkspaceRepository,
+    SaveProjectUseCase saveProject,
+    DeleteProjectUseCase deleteProject,
+    SaveEnvironmentUseCase saveEnvironment,
+    DeleteEnvironmentUseCase deleteEnvironment,
+    SaveTagUseCase saveTag,
+    DeleteTagUseCase deleteTag) {}

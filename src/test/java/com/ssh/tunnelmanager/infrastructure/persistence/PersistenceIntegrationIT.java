@@ -15,6 +15,7 @@ import com.ssh.tunnelmanager.infrastructure.persistence.backup.BackupService;
 import com.ssh.tunnelmanager.infrastructure.persistence.migration.DatabaseMigrator;
 import com.ssh.tunnelmanager.infrastructure.persistence.migration.MigrationScript;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcApplicationSettingsRepository;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcBulkWorkspaceRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcCredentialRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcEnvironmentRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcKeyboardShortcutRepository;
@@ -53,6 +54,7 @@ class PersistenceIntegrationIT {
   private JdbcTunnelGroupRepository groups;
   private JdbcApplicationSettingsRepository settings;
   private JdbcRecentItemRepository recent;
+  private JdbcBulkWorkspaceRepository bulkWorkspace;
 
   @BeforeEach
   void setUp() {
@@ -69,6 +71,7 @@ class PersistenceIntegrationIT {
     groups = new JdbcTunnelGroupRepository(database, dirty);
     settings = new JdbcApplicationSettingsRepository(database, dirty);
     recent = new JdbcRecentItemRepository(database, dirty);
+    bulkWorkspace = new JdbcBulkWorkspaceRepository(database);
   }
 
   @Test
@@ -275,6 +278,56 @@ class PersistenceIntegrationIT {
                         Set.of())))
         .isInstanceOf(PersistenceConstraintException.class);
     assertThat(groups.findById(groupId)).isEmpty();
+  }
+
+  @Test
+  void bulkWorkspaceChangesAreTransactionalAndPersistRelations() {
+    UUID credentialId = UUID.randomUUID();
+    UUID hostId = UUID.randomUUID();
+    credentials.save(new CredentialRecord(credentialId, "bulk", "bulk-password"));
+    hosts.save(new SshHostRecord(hostId, "bulk", "bulk.example", 22, credentialId));
+    UUID first = UUID.randomUUID();
+    UUID second = UUID.randomUUID();
+    tunnels.save(tunnel(first, hostId));
+    tunnels.save(tunnel(second, hostId));
+    UUID groupId = UUID.randomUUID();
+    groups.save(new TunnelGroupRecord(groupId, "bulk", null, null, false, Set.of(), Set.of()));
+
+    bulkWorkspace.setTunnelFavorites(Set.of(first, second), true);
+    bulkWorkspace.setTunnelClassification(Set.of(first, second), null, null);
+    bulkWorkspace.addTunnelsToGroup(Set.of(first, second), groupId);
+    assertThat(tunnels.findById(first)).get().extracting(TunnelRecord::favorite).isEqualTo(true);
+    assertThat(groups.findById(groupId))
+        .get()
+        .extracting(TunnelGroupRecord::tunnelIds)
+        .satisfies(ids -> assertThat(ids).containsExactlyInAnyOrder(first, second));
+
+    bulkWorkspace.removeTunnelsFromGroup(Set.of(first), groupId);
+    assertThat(groups.findById(groupId))
+        .get()
+        .extracting(TunnelGroupRecord::tunnelIds)
+        .satisfies(ids -> assertThat(ids).containsExactly(second));
+  }
+
+  private static TunnelRecord tunnel(UUID id, UUID hostId) {
+    return new TunnelRecord(
+        id,
+        id.toString(),
+        "127.0.0.1",
+        10000 + Math.abs(id.hashCode() % 1000),
+        "target",
+        80,
+        hostId,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        false,
+        Set.of(),
+        Map.of());
   }
 
   @Test
