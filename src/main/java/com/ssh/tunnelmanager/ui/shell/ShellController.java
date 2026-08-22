@@ -1614,10 +1614,10 @@ public final class ShellController implements AutoCloseable {
     GridPane grid =
         formGrid(
             "Nombre", name,
-            "Hostname", hostname,
+            "Nombre de host", hostname,
             "Puerto SSH", port,
             "Usuario", username,
-            "Password", password);
+            "Contraseña", password);
     grid.add(showPassword, 1, 5);
     grid.add(visiblePassword, 1, 6);
     dialog.getDialogPane().setContent(grid);
@@ -1761,20 +1761,20 @@ public final class ShellController implements AutoCloseable {
     Tab general = new Tab("General", formGrid("Nombre", name));
     Tab forwarding =
         new Tab(
-            "Local forwarding",
+            "Reenvío de puerto local",
             formGrid(
-                "Bind address", bind,
+                "Dirección de escucha", bind,
                 "Puerto local", localPort,
                 "Host destino", destinationHost,
                 "Puerto destino", destinationPort));
     Tab route =
-        new Tab("Ruta SSH", formGrid("Jump 1", jump1, "Jump 2", jump2, "SSH final", finalHost));
+        new Tab("Ruta SSH", formGrid("Salto 1", jump1, "Salto 2", jump2, "SSH final", finalHost));
     Tab advanced =
         new Tab(
             "Opciones avanzadas",
             formGrid(
-                "Keep-alive (s)", keepAlive,
-                "Timeout por tramo (s)", timeout,
+                "Mantener conexión (s)", keepAlive,
+                "Tiempo de espera por tramo (s)", timeout,
                 "Reintentos", retries,
                 "Opciones SSH", options));
     Tab organization =
