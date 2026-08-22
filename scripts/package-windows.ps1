@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
-$version = '0.2.0'
+$version = '0.3.0'
 $appName = 'ssh-tunnel-manager'
 $targetDirectory = Join-Path $projectRoot 'target'
 $inputDirectory = Join-Path $targetDirectory 'package-input'

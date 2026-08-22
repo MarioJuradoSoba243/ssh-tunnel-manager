@@ -6,7 +6,11 @@ import com.ssh.tunnelmanager.application.group.GroupEditorViewModel;
 import com.ssh.tunnelmanager.application.group.GroupListViewModel;
 import com.ssh.tunnelmanager.application.group.GroupRuntimeStatus;
 import com.ssh.tunnelmanager.application.host.HostListViewModel;
+import com.ssh.tunnelmanager.application.organization.ClassificationInUseException;
+import com.ssh.tunnelmanager.application.persistence.model.EnvironmentRecord;
+import com.ssh.tunnelmanager.application.persistence.model.ProjectRecord;
 import com.ssh.tunnelmanager.application.persistence.model.SshHostRecord;
+import com.ssh.tunnelmanager.application.persistence.model.TagRecord;
 import com.ssh.tunnelmanager.application.persistence.model.TunnelGroupRecord;
 import com.ssh.tunnelmanager.application.persistence.model.TunnelRecord;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntime;
@@ -14,6 +18,9 @@ import com.ssh.tunnelmanager.application.shell.NavigationItem;
 import com.ssh.tunnelmanager.application.shell.ShellViewModel;
 import com.ssh.tunnelmanager.application.tunnel.TunnelEditorViewModel;
 import com.ssh.tunnelmanager.application.tunnel.TunnelListViewModel;
+import com.ssh.tunnelmanager.application.workspace.HubViewModel;
+import com.ssh.tunnelmanager.application.workspace.SearchResult;
+import com.ssh.tunnelmanager.application.workspace.WorkspaceSearchViewModel;
 import com.ssh.tunnelmanager.domain.credential.Credential;
 import com.ssh.tunnelmanager.domain.host.SshHost;
 import java.time.Duration;
@@ -23,6 +30,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -70,7 +79,18 @@ public final class ShellController implements AutoCloseable {
   private TunnelEditorViewModel tunnelEditor;
   private GroupListViewModel groups;
   private GroupEditorViewModel groupEditor;
+  private WorkspaceSearchViewModel search;
+  private HubViewModel hub;
   private TableView<TunnelRecord> tunnelTable;
+  private javafx.collections.ObservableList<TunnelRecord> tunnelRows;
+  private FilteredList<TunnelRecord> filteredTunnelRows;
+  private TextField tunnelSearch;
+  private ComboBox<ProjectRecord> tunnelProjectFilter;
+  private ComboBox<EnvironmentRecord> tunnelEnvironmentFilter;
+  private ComboBox<TunnelGroupRecord> tunnelGroupFilter;
+  private ComboBox<com.ssh.tunnelmanager.domain.tunnel.ActualState> tunnelStateFilter;
+  private ListView<TagRecord> tunnelTagFilter;
+  private java.util.Map<UUID, Set<UUID>> tunnelGroupMembers = java.util.Map.of();
   private TableView<GroupRow> groupTable;
   private Timeline statusRefresh;
   private boolean editingTunnel;
@@ -105,7 +125,10 @@ public final class ShellController implements AutoCloseable {
               components.hostRepository(),
               components.credentialRepository(),
               components.tunnelRepository(),
-              components.saveTunnel());
+              components.saveTunnel(),
+              components.projectRepository(),
+              components.environmentRepository(),
+              components.tagRepository());
       groups =
           new GroupListViewModel(
               components.groupRepository(),
@@ -115,7 +138,24 @@ public final class ShellController implements AutoCloseable {
               components.duplicateGroup(),
               components.startGroup(),
               components.stopGroup());
-      groupEditor = new GroupEditorViewModel(components.tunnelRepository(), components.saveGroup());
+      groupEditor =
+          new GroupEditorViewModel(
+              components.tunnelRepository(),
+              components.saveGroup(),
+              components.projectRepository(),
+              components.environmentRepository(),
+              components.tagRepository());
+      search =
+          new WorkspaceSearchViewModel(
+              components.tunnelRepository(),
+              components.groupRepository(),
+              components.hostRepository());
+      hub =
+          new HubViewModel(
+              components.tunnelRepository(),
+              components.groupRepository(),
+              components.recentItemRepository(),
+              components.runtimeManager());
     }
   }
 
@@ -140,6 +180,22 @@ public final class ShellController implements AutoCloseable {
             });
     navigationList.getSelectionModel().selectFirst();
     if (tunnels != null) tunnels.subscribe(event -> Platform.runLater(this::refreshCurrentSection));
+    navigationList
+        .sceneProperty()
+        .addListener(
+            (observable, oldScene, scene) -> {
+              if (scene != null) {
+                scene.addEventFilter(
+                    javafx.scene.input.KeyEvent.KEY_PRESSED,
+                    event -> {
+                      if (event.isControlDown()
+                          && event.getCode() == javafx.scene.input.KeyCode.K) {
+                        event.consume();
+                        showGlobalSearch();
+                      }
+                    });
+              }
+            });
   }
 
   private void showSection(NavigationItem item) {
@@ -154,9 +210,301 @@ public final class ShellController implements AutoCloseable {
       case "hosts" -> showHosts();
       case "tunnels" -> showTunnels();
       case "groups" -> showGroups();
+      case "home" -> showHome();
+      case "organization" -> showOrganization();
       default ->
           sectionDescription.setText("Esta sección estará disponible en una fase posterior.");
     }
+  }
+
+  private void showHome() {
+    sectionDescription.setText("Favoritos, actividad reciente y estado actual de tus túneles.");
+    if (hub == null) return;
+    Label summary = new Label("Cargando resumen…");
+    ListView<String> favorites = new ListView<>();
+    ListView<String> recent = new ListView<>();
+    ListView<String> active = new ListView<>();
+    Button stopAll = new Button("Detener todos");
+    stopAll.setOnAction(event -> stopAllTunnels());
+    Button open = new Button("Abiertos");
+    Button reconnecting = new Button("Reconectando");
+    Button errors = new Button("Errores");
+    open.setOnAction(
+        event -> navigateToTunnelState(com.ssh.tunnelmanager.domain.tunnel.ActualState.OPEN));
+    reconnecting.setOnAction(
+        event ->
+            navigateToTunnelState(com.ssh.tunnelmanager.domain.tunnel.ActualState.RECONNECTING));
+    errors.setOnAction(
+        event -> navigateToTunnelState(com.ssh.tunnelmanager.domain.tunnel.ActualState.ERROR));
+    VBox content =
+        new VBox(
+            10,
+            summary,
+            new HBox(8, open, reconnecting, errors),
+            new Label("Favoritos"),
+            favorites,
+            new Label("Recientes"),
+            recent,
+            new Label("Túneles activos"),
+            active,
+            stopAll);
+    VBox.setVgrow(favorites, Priority.ALWAYS);
+    VBox.setVgrow(recent, Priority.ALWAYS);
+    VBox.setVgrow(active, Priority.ALWAYS);
+    contentContainer.getChildren().add(content);
+    workers.submit(
+        () -> {
+          search.refresh();
+          hub.refresh();
+          HubViewModel.HubSnapshot snapshot = hub.snapshot();
+          Platform.runLater(
+              () -> {
+                summary.setText(
+                    "Configurados: "
+                        + snapshot.configuredTunnels()
+                        + " · Abiertos: "
+                        + snapshot.openTunnels()
+                        + " · Reconectando: "
+                        + snapshot.reconnectingTunnels()
+                        + " · Errores: "
+                        + snapshot.errorTunnels());
+                favorites
+                    .getItems()
+                    .setAll(snapshot.favorites().stream().map(item -> item.name()).toList());
+                recent
+                    .getItems()
+                    .setAll(snapshot.recent().stream().map(item -> item.name()).toList());
+                active
+                    .getItems()
+                    .setAll(snapshot.active().stream().map(item -> item.name()).toList());
+              });
+        });
+  }
+
+  private void stopAllTunnels() {
+    Alert confirmation =
+        new Alert(Alert.AlertType.CONFIRMATION, "Se detendrán todos los túneles activos.");
+    confirmation.setHeaderText("Detener todos");
+    if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+    workers.submit(() -> components.runtimeManager().stopAll());
+  }
+
+  private void showGlobalSearch() {
+    if (search == null) return;
+    TextInputDialog dialog = new TextInputDialog();
+    dialog.setTitle("Buscar en el espacio de trabajo");
+    dialog.setHeaderText("Ctrl+K · túneles, grupos y hosts SSH");
+    dialog.setContentText("Texto:");
+    dialog
+        .showAndWait()
+        .filter(value -> !value.isBlank())
+        .ifPresent(
+            value -> {
+              workers.submit(
+                  () -> {
+                    search.refresh();
+                    List<SearchResult> results = search.search(value);
+                    Platform.runLater(() -> showSearchResults(value, results));
+                  });
+            });
+  }
+
+  private void showSearchResults(String query, List<SearchResult> results) {
+    if (results.isEmpty()) {
+      showInfo("Resultados de búsqueda", "No se encontraron túneles, grupos ni hosts.");
+      return;
+    }
+    javafx.scene.control.ChoiceDialog<SearchResult> dialog =
+        new javafx.scene.control.ChoiceDialog<>(results.getFirst(), results);
+    dialog.setTitle("Resultados de búsqueda");
+    dialog.setHeaderText("Resultados para: " + query + " · elige uno para navegar");
+    dialog.setContentText("Resultado:");
+    dialog.getDialogPane().lookupButton(ButtonType.OK).setDisable(false);
+    dialog
+        .showAndWait()
+        .ifPresent(
+            result ->
+                navigationList.getItems().stream()
+                    .filter(item -> item.id().equals(result.kind().name().toLowerCase()))
+                    .findFirst()
+                    .ifPresent(item -> navigationList.getSelectionModel().select(item)));
+  }
+
+  private void navigateToTunnelState(com.ssh.tunnelmanager.domain.tunnel.ActualState state) {
+    navigationList.getItems().stream()
+        .filter(item -> item.id().equals("tunnels"))
+        .findFirst()
+        .ifPresent(
+            item -> {
+              navigationList.getSelectionModel().select(item);
+              Platform.runLater(
+                  () -> {
+                    if (tunnelStateFilter != null) tunnelStateFilter.setValue(state);
+                  });
+            });
+  }
+
+  private void showOrganization() {
+    sectionDescription.setText(
+        "Gestiona proyectos, entornos y etiquetas para organizar túneles y grupos.");
+    if (components == null) return;
+    ListView<ProjectRecord> projects = new ListView<>();
+    ListView<EnvironmentRecord> environments = new ListView<>();
+    ListView<TagRecord> tags = new ListView<>();
+    contentContainer
+        .getChildren()
+        .add(
+            new TabPane(
+                new Tab(
+                    "Proyectos",
+                    classificationPanel(
+                        projects,
+                        components.projectRepository()::findAll,
+                        ProjectRecord::name,
+                        ProjectRecord::id,
+                        (id, name) ->
+                            components
+                                .saveProject()
+                                .execute(
+                                    new com.ssh.tunnelmanager.domain.organization.Project(
+                                        id, name)),
+                        (id, confirmed) -> components.deleteProject().execute(id, confirmed))),
+                new Tab(
+                    "Entornos",
+                    classificationPanel(
+                        environments,
+                        components.environmentRepository()::findAll,
+                        EnvironmentRecord::name,
+                        EnvironmentRecord::id,
+                        (id, name) ->
+                            components
+                                .saveEnvironment()
+                                .execute(
+                                    new com.ssh.tunnelmanager.domain.organization.Environment(
+                                        id, name)),
+                        (id, confirmed) -> components.deleteEnvironment().execute(id, confirmed))),
+                new Tab(
+                    "Etiquetas",
+                    classificationPanel(
+                        tags,
+                        components.tagRepository()::findAll,
+                        TagRecord::name,
+                        TagRecord::id,
+                        (id, name) ->
+                            components
+                                .saveTag()
+                                .execute(
+                                    new com.ssh.tunnelmanager.domain.organization.Tag(id, name)),
+                        (id, confirmed) -> components.deleteTag().execute(id, confirmed)))));
+    contentContainer.getChildren().stream()
+        .filter(TabPane.class::isInstance)
+        .map(TabPane.class::cast)
+        .findFirst()
+        .ifPresent(pane -> pane.getTabs().forEach(tab -> tab.setClosable(false)));
+  }
+
+  private <T> VBox classificationPanel(
+      ListView<T> list,
+      Supplier<List<T>> loader,
+      Function<T, String> display,
+      Function<T, UUID> id,
+      java.util.function.BiConsumer<UUID, String> save,
+      java.util.function.BiConsumer<UUID, Boolean> delete) {
+    list.setCellFactory(
+        ignored ->
+            new ListCell<>() {
+              @Override
+              protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : display.apply(item));
+              }
+            });
+    Button add = new Button("Nuevo");
+    Button edit = new Button("Editar");
+    Button remove = new Button("Eliminar");
+    Runnable refresh =
+        () ->
+            workers.submit(
+                () -> {
+                  List<T> values = loader.get();
+                  Platform.runLater(() -> list.getItems().setAll(values));
+                });
+    add.setOnAction(event -> editClassification(null, display, id, save, refresh));
+    edit.setOnAction(
+        event ->
+            editClassification(
+                list.getSelectionModel().getSelectedItem(), display, id, save, refresh));
+    remove.setOnAction(
+        event -> {
+          T selected = list.getSelectionModel().getSelectedItem();
+          if (selected == null) return;
+          deleteClassification(selected, id, delete, refresh);
+        });
+    refresh.run();
+    VBox panel = new VBox(8, list, new HBox(8, add, edit, remove));
+    VBox.setVgrow(list, Priority.ALWAYS);
+    return panel;
+  }
+
+  private <T> void editClassification(
+      T selected,
+      Function<T, String> display,
+      Function<T, UUID> id,
+      java.util.function.BiConsumer<UUID, String> save,
+      Runnable refresh) {
+    TextInputDialog dialog = new TextInputDialog(selected == null ? "" : display.apply(selected));
+    dialog.setTitle(selected == null ? "Nueva clasificación" : "Editar clasificación");
+    dialog.setHeaderText("Nombre");
+    dialog
+        .showAndWait()
+        .filter(value -> !value.isBlank())
+        .ifPresent(
+            value ->
+                workers.submit(
+                    () -> {
+                      try {
+                        save.accept(
+                            selected == null ? UUID.randomUUID() : id.apply(selected), value);
+                        Platform.runLater(refresh);
+                      } catch (RuntimeException exception) {
+                        Platform.runLater(() -> showError("No se pudo guardar", exception));
+                      }
+                    }));
+  }
+
+  private <T> void deleteClassification(
+      T selected,
+      Function<T, UUID> id,
+      java.util.function.BiConsumer<UUID, Boolean> delete,
+      Runnable refresh) {
+    workers.submit(
+        () -> {
+          try {
+            delete.accept(id.apply(selected), false);
+            Platform.runLater(refresh);
+          } catch (ClassificationInUseException exception) {
+            Platform.runLater(
+                () -> {
+                  Alert confirmation =
+                      new Alert(
+                          Alert.AlertType.CONFIRMATION,
+                          "Está en uso por "
+                              + exception.usage().tunnelCount()
+                              + " túneles y "
+                              + exception.usage().groupCount()
+                              + " grupos. Las referencias quedarán sin clasificación.");
+                  confirmation.setHeaderText("Confirmar eliminación");
+                  if (confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK)
+                    workers.submit(
+                        () -> {
+                          delete.accept(exception.id(), true);
+                          Platform.runLater(refresh);
+                        });
+                });
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudo eliminar", exception));
+          }
+        });
   }
 
   private void showGroups() {
@@ -264,11 +612,22 @@ public final class ShellController implements AutoCloseable {
     workers.submit(
         () -> {
           List<TunnelRecord> available = groupEditor.availableTunnels();
-          Platform.runLater(() -> showGroupEditor(existing, available));
+          List<ProjectRecord> projectRecords = groupEditor.projects();
+          List<EnvironmentRecord> environmentRecords = groupEditor.environments();
+          List<TagRecord> tagRecords = groupEditor.tags();
+          Platform.runLater(
+              () ->
+                  showGroupEditor(
+                      existing, available, projectRecords, environmentRecords, tagRecords));
         });
   }
 
-  private void showGroupEditor(TunnelGroupRecord existing, List<TunnelRecord> available) {
+  private void showGroupEditor(
+      TunnelGroupRecord existing,
+      List<TunnelRecord> available,
+      List<ProjectRecord> projectRecords,
+      List<EnvironmentRecord> environmentRecords,
+      List<TagRecord> tagRecords) {
     editingGroup = true;
     stopStatusRefresh();
     contentContainer
@@ -281,6 +640,33 @@ public final class ShellController implements AutoCloseable {
             ? new GroupEditorViewModel.Form(null, "", Set.of())
             : groupEditor.fromRecord(existing);
     TextField name = new TextField(initial.name());
+    ComboBox<ProjectRecord> project =
+        classificationCombo(
+            projectRecords, initial.projectId(), ProjectRecord::id, ProjectRecord::name);
+    ComboBox<EnvironmentRecord> environment =
+        classificationCombo(
+            environmentRecords,
+            initial.environmentId(),
+            EnvironmentRecord::id,
+            EnvironmentRecord::name);
+    ListView<TagRecord> tagSelection =
+        new ListView<>(FXCollections.observableArrayList(tagRecords));
+    tagSelection.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
+    tagRecords.stream()
+        .filter(tag -> initial.tagIds().contains(tag.id()))
+        .forEach(tag -> tagSelection.getSelectionModel().select(tag));
+    tagSelection.setPrefHeight(90);
+    tagSelection.setCellFactory(
+        ignored ->
+            new ListCell<>() {
+              @Override
+              protected void updateItem(TagRecord item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.name());
+              }
+            });
+    CheckBox favorite = new CheckBox("Favorito");
+    favorite.setSelected(initial.favorite());
     TextField search = new TextField();
     search.setPromptText("Buscar túneles por nombre o endpoint");
     TableView<GroupChoice> choices = new TableView<>();
@@ -314,19 +700,40 @@ public final class ShellController implements AutoCloseable {
     choices.setItems(filtered);
     Button save = new Button("Guardar");
     Button cancel = new Button("Cancelar");
-    save.setOnAction(event -> saveGroupEditor(existing, name, rows));
+    save.setOnAction(
+        event ->
+            saveGroupEditor(existing, name, rows, project, environment, tagSelection, favorite));
     cancel.setOnAction(event -> showGroups());
     VBox editor =
         new VBox(
             10,
-            formGrid("Nombre", name, "Buscar túneles", search),
+            formGrid(
+                "Nombre",
+                name,
+                "Buscar túneles",
+                search,
+                "Proyecto",
+                project,
+                "Entorno",
+                environment,
+                "Etiquetas",
+                tagSelection,
+                "",
+                favorite),
             choices,
             new HBox(8, save, cancel));
     VBox.setVgrow(choices, Priority.ALWAYS);
     contentContainer.getChildren().add(editor);
   }
 
-  private void saveGroupEditor(TunnelGroupRecord existing, TextField name, List<GroupChoice> rows) {
+  private void saveGroupEditor(
+      TunnelGroupRecord existing,
+      TextField name,
+      List<GroupChoice> rows,
+      ComboBox<ProjectRecord> project,
+      ComboBox<EnvironmentRecord> environment,
+      ListView<TagRecord> tags,
+      CheckBox favorite) {
     UUID id = existing == null ? UUID.randomUUID() : existing.id();
     GroupEditorViewModel.Form form =
         new GroupEditorViewModel.Form(
@@ -335,6 +742,12 @@ public final class ShellController implements AutoCloseable {
             rows.stream()
                 .filter(row -> row.selected().get())
                 .map(row -> row.tunnel().id())
+                .collect(java.util.stream.Collectors.toSet()),
+            project.getValue() == null ? null : project.getValue().id(),
+            environment.getValue() == null ? null : environment.getValue().id(),
+            favorite.isSelected(),
+            tags.getSelectionModel().getSelectedItems().stream()
+                .map(TagRecord::id)
                 .collect(java.util.stream.Collectors.toSet()));
     workers.submit(
         () -> {
@@ -415,7 +828,12 @@ public final class ShellController implements AutoCloseable {
     TableColumn<TunnelRecord, String> active = new TableColumn<>("Tiempo activo");
     active.setCellValueFactory(
         data -> new javafx.beans.property.SimpleStringProperty(activeTime(data.getValue())));
-    tunnelTable.getColumns().addAll(name, endpoint, state, active);
+    TableColumn<TunnelRecord, String> favorite = new TableColumn<>("★");
+    favorite.setCellValueFactory(
+        data ->
+            new javafx.beans.property.SimpleStringProperty(data.getValue().favorite() ? "★" : ""));
+    tunnelTable.getColumns().addAll(name, endpoint, state, active, favorite);
+    tunnelTable.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
     tunnelTable.setOnMouseClicked(
         event -> {
           if (event.getClickCount() == 2
@@ -432,6 +850,13 @@ public final class ShellController implements AutoCloseable {
     Button stop = new Button("Detener");
     Button retry = new Button("Reintentar");
     Button details = new Button("Ver detalles");
+    Button bulkStart = new Button("Iniciar selección");
+    Button bulkStop = new Button("Detener selección");
+    Button favoriteOn = new Button("Favorito");
+    Button favoriteOff = new Button("Quitar favorito");
+    Button assignProject = new Button("Asignar proyecto/entorno");
+    Button assignGroup = new Button("Añadir a grupo");
+    Button removeGroup = new Button("Quitar de grupo");
     add.setOnAction(event -> openTunnelEditor(tunnelTable, null));
     edit.setOnAction(
         event -> openTunnelEditor(tunnelTable, tunnelTable.getSelectionModel().getSelectedItem()));
@@ -447,14 +872,72 @@ public final class ShellController implements AutoCloseable {
         event -> operateTunnel(tunnelTable.getSelectionModel().getSelectedItem(), tunnels::retry));
     details.setOnAction(
         event -> showTunnelDetails(tunnelTable.getSelectionModel().getSelectedItem()));
+    bulkStart.setOnAction(event -> bulkOperate(true));
+    bulkStop.setOnAction(event -> bulkOperate(false));
+    favoriteOn.setOnAction(event -> bulkFavorite(true));
+    favoriteOff.setOnAction(event -> bulkFavorite(false));
+    assignProject.setOnAction(event -> bulkAssignProject());
+    assignGroup.setOnAction(event -> bulkAssignGroup());
+    removeGroup.setOnAction(event -> bulkRemoveGroup());
+    tunnelSearch = new TextField();
+    tunnelSearch.setPromptText("Filtrar túneles por nombre o destino");
+    tunnelProjectFilter = new ComboBox<>();
+    tunnelProjectFilter.setPromptText("Proyecto");
+    tunnelEnvironmentFilter = new ComboBox<>();
+    tunnelEnvironmentFilter.setPromptText("Entorno");
+    tunnelGroupFilter = new ComboBox<>();
+    tunnelGroupFilter.setPromptText("Grupo");
+    tunnelStateFilter =
+        new ComboBox<>(
+            FXCollections.observableArrayList(
+                com.ssh.tunnelmanager.domain.tunnel.ActualState.values()));
+    tunnelStateFilter.setPromptText("Estado");
+    tunnelTagFilter = new ListView<>();
+    tunnelTagFilter
+        .getSelectionModel()
+        .setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
+    tunnelTagFilter.setPrefHeight(70);
+    tunnelTagFilter.setCellFactory(
+        ignored ->
+            new ListCell<>() {
+              @Override
+              protected void updateItem(TagRecord item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.name());
+              }
+            });
+    HBox filters =
+        new HBox(
+            8,
+            tunnelSearch,
+            tunnelProjectFilter,
+            tunnelEnvironmentFilter,
+            tunnelGroupFilter,
+            tunnelStateFilter,
+            tunnelTagFilter);
+    tunnelSearch.textProperty().addListener((obs, old, value) -> applyTunnelFilters());
+    tunnelProjectFilter.valueProperty().addListener((obs, old, value) -> applyTunnelFilters());
+    tunnelEnvironmentFilter.valueProperty().addListener((obs, old, value) -> applyTunnelFilters());
+    tunnelGroupFilter.valueProperty().addListener((obs, old, value) -> applyTunnelFilters());
+    tunnelStateFilter.valueProperty().addListener((obs, old, value) -> applyTunnelFilters());
+    tunnelTagFilter
+        .getSelectionModel()
+        .getSelectedItems()
+        .addListener(
+            (javafx.collections.ListChangeListener<TagRecord>) change -> applyTunnelFilters());
     HBox actions = new HBox(8, add, edit, duplicate, remove, test, start, stop, retry, details);
-    contentContainer.getChildren().addAll(tunnelTable, actions);
+    HBox bulkActions =
+        new HBox(
+            8,
+            bulkStart,
+            bulkStop,
+            favoriteOn,
+            favoriteOff,
+            assignProject,
+            assignGroup,
+            removeGroup);
+    contentContainer.getChildren().addAll(filters, tunnelTable, actions, bulkActions);
     refreshTunnels(tunnelTable);
-    statusRefresh =
-        new Timeline(
-            new KeyFrame(javafx.util.Duration.seconds(1), event -> refreshTunnels(tunnelTable)));
-    statusRefresh.setCycleCount(Timeline.INDEFINITE);
-    statusRefresh.play();
   }
 
   private void refreshCurrentSection() {
@@ -462,8 +945,15 @@ public final class ShellController implements AutoCloseable {
     NavigationItem selected = navigationList.getSelectionModel().getSelectedItem();
     if (selected == null) return;
     if ("hosts".equals(selected.id())) showHosts();
-    if ("tunnels".equals(selected.id())) showTunnels();
-    if ("groups".equals(selected.id())) showGroups();
+    if ("tunnels".equals(selected.id())) {
+      if (tunnelTable != null) tunnelTable.refresh();
+      else showTunnels();
+    }
+    if ("home".equals(selected.id()) && hub != null) showHome();
+    if ("groups".equals(selected.id())) {
+      if (groupTable != null) groupTable.refresh();
+      else showGroups();
+    }
   }
 
   private void refreshHosts(TableView<SshHostRecord> table) {
@@ -480,9 +970,179 @@ public final class ShellController implements AutoCloseable {
           List<TunnelRecord> values = tunnels.tunnels();
           Platform.runLater(
               () -> {
-                if (table == tunnelTable) table.setItems(FXCollections.observableArrayList(values));
+                if (table != tunnelTable) return;
+                if (tunnelRows == null) {
+                  tunnelRows = FXCollections.observableArrayList();
+                  filteredTunnelRows = new FilteredList<>(tunnelRows, ignored -> true);
+                  javafx.collections.transformation.SortedList<TunnelRecord> sorted =
+                      new javafx.collections.transformation.SortedList<>(filteredTunnelRows);
+                  sorted.comparatorProperty().bind(table.comparatorProperty());
+                  table.setItems(sorted);
+                }
+                tunnelRows.setAll(values);
+                if (components != null) {
+                  tunnelProjectFilter.getItems().setAll(components.projectRepository().findAll());
+                  tunnelEnvironmentFilter
+                      .getItems()
+                      .setAll(components.environmentRepository().findAll());
+                  List<TunnelGroupRecord> groups = components.groupRepository().findAll();
+                  tunnelGroupFilter.getItems().setAll(groups);
+                  tunnelGroupMembers =
+                      groups.stream()
+                          .collect(
+                              java.util.stream.Collectors.toUnmodifiableMap(
+                                  TunnelGroupRecord::id, TunnelGroupRecord::tunnelIds));
+                  tunnelTagFilter.getItems().setAll(components.tagRepository().findAll());
+                }
+                applyTunnelFilters();
               });
         });
+  }
+
+  private void applyTunnelFilters() {
+    if (filteredTunnelRows == null) return;
+    String query = tunnelSearch == null ? "" : tunnelSearch.getText().trim().toLowerCase();
+    UUID projectId =
+        tunnelProjectFilter.getValue() == null ? null : tunnelProjectFilter.getValue().id();
+    UUID environmentId =
+        tunnelEnvironmentFilter.getValue() == null ? null : tunnelEnvironmentFilter.getValue().id();
+    UUID groupId = tunnelGroupFilter.getValue() == null ? null : tunnelGroupFilter.getValue().id();
+    com.ssh.tunnelmanager.domain.tunnel.ActualState state = tunnelStateFilter.getValue();
+    Set<UUID> tagIds =
+        tunnelTagFilter == null
+            ? Set.of()
+            : tunnelTagFilter.getSelectionModel().getSelectedItems().stream()
+                .map(TagRecord::id)
+                .collect(java.util.stream.Collectors.toSet());
+    filteredTunnelRows.setPredicate(
+        tunnel -> {
+          if (!query.isEmpty()
+              && !tunnel.name().toLowerCase().contains(query)
+              && !tunnel.destinationHost().toLowerCase().contains(query)) return false;
+          if (projectId != null && !projectId.equals(tunnel.projectId())) return false;
+          if (environmentId != null && !environmentId.equals(tunnel.environmentId())) return false;
+          if (!tunnel.tagIds().containsAll(tagIds)) return false;
+          if (groupId != null
+              && !tunnelGroupMembers.getOrDefault(groupId, Set.of()).contains(tunnel.id()))
+            return false;
+          return state == null || tunnels.runtime(tunnel.id()).actualState() == state;
+        });
+  }
+
+  private List<TunnelRecord> selectedTunnels() {
+    return tunnelTable == null
+        ? List.of()
+        : List.copyOf(tunnelTable.getSelectionModel().getSelectedItems());
+  }
+
+  private void bulkOperate(boolean start) {
+    List<TunnelRecord> selected = selectedTunnels();
+    workers.submit(
+        () ->
+            selected.forEach(
+                tunnel -> {
+                  if (start) components.startTunnel().execute(tunnel.id());
+                  else components.stopTunnel().execute(tunnel.id());
+                }));
+  }
+
+  private void bulkFavorite(boolean favorite) {
+    Set<UUID> selected =
+        selectedTunnels().stream()
+            .map(TunnelRecord::id)
+            .collect(java.util.stream.Collectors.toSet());
+    if (selected.isEmpty()) return;
+    workers.submit(
+        () -> {
+          components.bulkWorkspaceRepository().setTunnelFavorites(selected, favorite);
+          Platform.runLater(this::showTunnels);
+        });
+  }
+
+  private void bulkAssignProject() {
+    List<ProjectRecord> projects = components.projectRepository().findAll();
+    if (projects.isEmpty()) return;
+    javafx.scene.control.ChoiceDialog<ProjectRecord> dialog =
+        new javafx.scene.control.ChoiceDialog<>(projects.getFirst(), projects);
+    dialog.setTitle("Asignar proyecto");
+    dialog.setHeaderText("Selecciona un proyecto");
+    dialog
+        .showAndWait()
+        .ifPresent(
+            project -> {
+              List<EnvironmentRecord> environments = components.environmentRepository().findAll();
+              if (environments.isEmpty()) {
+                bulkAssignClassification(project.id(), null);
+                return;
+              }
+              javafx.scene.control.ChoiceDialog<EnvironmentRecord> environmentDialog =
+                  new javafx.scene.control.ChoiceDialog<>(environments.getFirst(), environments);
+              environmentDialog.setTitle("Asignar entorno");
+              environmentDialog.setHeaderText("Selecciona un entorno");
+              environmentDialog
+                  .showAndWait()
+                  .ifPresent(
+                      environment -> bulkAssignClassification(project.id(), environment.id()));
+            });
+  }
+
+  private void bulkAssignClassification(UUID projectId, UUID environmentId) {
+    Set<UUID> selected =
+        selectedTunnels().stream()
+            .map(TunnelRecord::id)
+            .collect(java.util.stream.Collectors.toSet());
+    if (selected.isEmpty()) return;
+    workers.submit(
+        () -> {
+          components
+              .bulkWorkspaceRepository()
+              .setTunnelClassification(selected, projectId, environmentId);
+          Platform.runLater(this::showTunnels);
+        });
+  }
+
+  private void bulkAssignGroup() {
+    List<TunnelGroupRecord> groups = components.groupRepository().findAll();
+    if (groups.isEmpty()) return;
+    javafx.scene.control.ChoiceDialog<TunnelGroupRecord> dialog =
+        new javafx.scene.control.ChoiceDialog<>(groups.getFirst(), groups);
+    dialog.setTitle("Añadir a grupo");
+    dialog.setHeaderText("Selecciona un grupo");
+    dialog
+        .showAndWait()
+        .ifPresent(
+            group -> {
+              Set<UUID> selected =
+                  selectedTunnels().stream()
+                      .map(TunnelRecord::id)
+                      .collect(java.util.stream.Collectors.toSet());
+              workers.submit(
+                  () ->
+                      components.bulkWorkspaceRepository().addTunnelsToGroup(selected, group.id()));
+            });
+  }
+
+  private void bulkRemoveGroup() {
+    List<TunnelGroupRecord> groups = components.groupRepository().findAll();
+    if (groups.isEmpty()) return;
+    javafx.scene.control.ChoiceDialog<TunnelGroupRecord> dialog =
+        new javafx.scene.control.ChoiceDialog<>(groups.getFirst(), groups);
+    dialog.setTitle("Quitar de grupo");
+    dialog.setHeaderText("Selecciona un grupo");
+    dialog
+        .showAndWait()
+        .ifPresent(
+            group -> {
+              Set<UUID> selected =
+                  selectedTunnels().stream()
+                      .map(TunnelRecord::id)
+                      .collect(java.util.stream.Collectors.toSet());
+              workers.submit(
+                  () ->
+                      components
+                          .bulkWorkspaceRepository()
+                          .removeTunnelsFromGroup(selected, group.id()));
+            });
   }
 
   private void openHostEditor(TableView<SshHostRecord> table, SshHostRecord existing) {
@@ -591,12 +1251,28 @@ public final class ShellController implements AutoCloseable {
     workers.submit(
         () -> {
           List<SshHostRecord> hostRecords = tunnelEditor.hosts();
-          Platform.runLater(() -> showTunnelEditor(table, existing, hostRecords));
+          List<ProjectRecord> projectRecords = tunnelEditor.projects();
+          List<EnvironmentRecord> environmentRecords = tunnelEditor.environments();
+          List<TagRecord> tagRecords = tunnelEditor.tags();
+          Platform.runLater(
+              () ->
+                  showTunnelEditor(
+                      table,
+                      existing,
+                      hostRecords,
+                      projectRecords,
+                      environmentRecords,
+                      tagRecords));
         });
   }
 
   private void showTunnelEditor(
-      TableView<TunnelRecord> table, TunnelRecord existing, List<SshHostRecord> hostRecords) {
+      TableView<TunnelRecord> table,
+      TunnelRecord existing,
+      List<SshHostRecord> hostRecords,
+      List<ProjectRecord> projectRecords,
+      List<EnvironmentRecord> environmentRecords,
+      List<TagRecord> tagRecords) {
     editingTunnel = true;
     stopStatusRefresh();
     contentContainer
@@ -616,6 +1292,33 @@ public final class ShellController implements AutoCloseable {
     ComboBox<SshHostRecord> jump1 = hostCombo(hostRecords, initial.jump1HostId());
     ComboBox<SshHostRecord> jump2 = hostCombo(hostRecords, initial.jump2HostId());
     ComboBox<SshHostRecord> finalHost = hostCombo(hostRecords, initial.finalHostId());
+    ComboBox<ProjectRecord> project =
+        classificationCombo(
+            projectRecords, initial.projectId(), ProjectRecord::id, ProjectRecord::name);
+    ComboBox<EnvironmentRecord> environment =
+        classificationCombo(
+            environmentRecords,
+            initial.environmentId(),
+            EnvironmentRecord::id,
+            EnvironmentRecord::name);
+    ListView<TagRecord> tagSelection =
+        new ListView<>(FXCollections.observableArrayList(tagRecords));
+    tagSelection.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
+    tagRecords.stream()
+        .filter(tag -> initial.tagIds().contains(tag.id()))
+        .forEach(tag -> tagSelection.getSelectionModel().select(tag));
+    tagSelection.setPrefHeight(90);
+    tagSelection.setCellFactory(
+        ignored ->
+            new ListCell<>() {
+              @Override
+              protected void updateItem(TagRecord item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.name());
+              }
+            });
+    CheckBox favorite = new CheckBox("Favorito");
+    favorite.setSelected(initial.favorite());
     TextField keepAlive = new TextField(initial.keepAliveSeconds());
     keepAlive.setPromptText("Global: 30 segundos");
     TextField timeout = new TextField(initial.connectionTimeoutSeconds());
@@ -645,8 +1348,21 @@ public final class ShellController implements AutoCloseable {
                 "Timeout por tramo (s)", timeout,
                 "Reintentos", retries,
                 "Opciones SSH", options));
-    List.of(general, forwarding, route, advanced).forEach(tab -> tab.setClosable(false));
-    TabPane tabs = new TabPane(general, forwarding, route, advanced);
+    Tab organization =
+        new Tab(
+            "Organización",
+            formGrid(
+                "Proyecto",
+                project,
+                "Entorno",
+                environment,
+                "Etiquetas",
+                tagSelection,
+                "",
+                favorite));
+    List.of(general, forwarding, route, advanced, organization)
+        .forEach(tab -> tab.setClosable(false));
+    TabPane tabs = new TabPane(general, forwarding, route, advanced, organization);
     Label validation = new Label();
     validation.getStyleClass().add("error-text");
     Button saveButton = new Button("Guardar");
@@ -675,7 +1391,11 @@ public final class ShellController implements AutoCloseable {
                       keepAlive,
                       timeout,
                       retries,
-                      options));
+                      options,
+                      project,
+                      environment,
+                      tagSelection,
+                      favorite));
           validation.setText(String.join("\n", errors));
           saveButton.setDisable(!errors.isEmpty());
         };
@@ -691,7 +1411,7 @@ public final class ShellController implements AutoCloseable {
             options)
         .forEach(
             control -> control.textProperty().addListener((obs, old, value) -> validate.run()));
-    List.of(jump1, jump2, finalHost)
+    List.of(jump1, jump2, finalHost, project, environment)
         .forEach(
             control -> control.valueProperty().addListener((obs, old, value) -> validate.run()));
     validate.run();
@@ -713,13 +1433,20 @@ public final class ShellController implements AutoCloseable {
                     keepAlive,
                     timeout,
                     retries,
-                    options)));
+                    options,
+                    project,
+                    environment,
+                    tagSelection,
+                    favorite)));
     cancelButton.setOnAction(event -> showTunnels());
   }
 
   private void saveTunnelFromEditor(
       TableView<TunnelRecord> table, TunnelRecord existing, TunnelEditorViewModel.Form form) {
-    boolean restart = existing != null && tunnels.runtime(existing.id()).actualState().isActive();
+    boolean restart =
+        existing != null
+            && tunnels.runtime(existing.id()).actualState().isActive()
+            && requiresRuntimeRestart(existing, form);
     if (restart) {
       Alert confirmation =
           new Alert(
@@ -860,7 +1587,11 @@ public final class ShellController implements AutoCloseable {
       TextField keepAlive,
       TextField timeout,
       TextField retries,
-      TextArea options) {
+      TextArea options,
+      ComboBox<ProjectRecord> project,
+      ComboBox<EnvironmentRecord> environment,
+      ListView<TagRecord> tags,
+      CheckBox favorite) {
     return new TunnelEditorViewModel.Form(
         id,
         name.getText(),
@@ -874,7 +1605,78 @@ public final class ShellController implements AutoCloseable {
         keepAlive.getText(),
         timeout.getText(),
         retries.getText(),
-        options.getText());
+        options.getText(),
+        project.getValue() == null ? null : project.getValue().id(),
+        environment.getValue() == null ? null : environment.getValue().id(),
+        tags.getSelectionModel().getSelectedItems().stream()
+            .map(TagRecord::id)
+            .collect(java.util.stream.Collectors.toSet()),
+        favorite.isSelected());
+  }
+
+  private static <T> ComboBox<T> classificationCombo(
+      List<T> values, UUID selected, Function<T, UUID> id, Function<T, String> name) {
+    ComboBox<T> combo = new ComboBox<>(FXCollections.observableArrayList(values));
+    combo.setCellFactory(
+        ignored ->
+            new ListCell<>() {
+              @Override
+              protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : name.apply(item));
+              }
+            });
+    combo.setButtonCell(
+        new ListCell<>() {
+          @Override
+          protected void updateItem(T item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(empty || item == null ? null : name.apply(item));
+          }
+        });
+    values.stream()
+        .filter(value -> id.apply(value).equals(selected))
+        .findFirst()
+        .ifPresent(combo::setValue);
+    return combo;
+  }
+
+  private static boolean requiresRuntimeRestart(
+      TunnelRecord existing, TunnelEditorViewModel.Form form) {
+    return !existing.bindAddress().equals(form.bindAddress().trim())
+        || existing.localPort() != Integer.parseInt(form.localPort().trim())
+        || !existing.destinationHost().equals(form.destinationHost().trim())
+        || existing.destinationPort() != Integer.parseInt(form.destinationPort().trim())
+        || !java.util.Objects.equals(existing.finalHostId(), form.finalHostId())
+        || !java.util.Objects.equals(existing.jump1HostId(), form.jump1HostId())
+        || !java.util.Objects.equals(existing.jump2HostId(), form.jump2HostId())
+        || !java.util.Objects.equals(
+            existing.keepAliveOverrideSeconds(), parseLongOrNull(form.keepAliveSeconds()))
+        || !java.util.Objects.equals(
+            existing.connectionTimeoutOverrideSeconds(),
+            parseLongOrNull(form.connectionTimeoutSeconds()))
+        || !java.util.Objects.equals(
+            existing.retryCountOverride(), parseIntegerOrNull(form.retryCount()))
+        || !existing.sshOptions().equals(parseOptionsForComparison(form.sshOptions()));
+  }
+
+  private static Long parseLongOrNull(String value) {
+    return value == null || value.isBlank() ? null : Long.parseLong(value.trim());
+  }
+
+  private static Integer parseIntegerOrNull(String value) {
+    return value == null || value.isBlank() ? null : Integer.parseInt(value.trim());
+  }
+
+  private static java.util.Map<String, String> parseOptionsForComparison(String value) {
+    if (value == null || value.isBlank()) return java.util.Map.of();
+    return value
+        .lines()
+        .filter(line -> !line.isBlank())
+        .map(line -> line.split("=", 2))
+        .collect(
+            java.util.stream.Collectors.toUnmodifiableMap(
+                pair -> pair[0].trim(), pair -> pair.length > 1 ? pair[1].trim() : ""));
   }
 
   private static UUID idOf(ComboBox<SshHostRecord> combo) {

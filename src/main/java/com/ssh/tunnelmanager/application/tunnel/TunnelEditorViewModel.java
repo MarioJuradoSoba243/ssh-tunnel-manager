@@ -1,7 +1,10 @@
 package com.ssh.tunnelmanager.application.tunnel;
 
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
+import com.ssh.tunnelmanager.application.persistence.EnvironmentRepository;
+import com.ssh.tunnelmanager.application.persistence.ProjectRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
+import com.ssh.tunnelmanager.application.persistence.TagRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
 import com.ssh.tunnelmanager.application.persistence.model.CredentialRecord;
 import com.ssh.tunnelmanager.application.persistence.model.SshHostRecord;
@@ -26,6 +29,9 @@ public final class TunnelEditorViewModel {
   private final CredentialRepository credentials;
   private final TunnelRepository tunnels;
   private final SaveTunnelUseCase save;
+  private final ProjectRepository projects;
+  private final EnvironmentRepository environments;
+  private final TagRepository tags;
   private volatile List<TunnelRecord> cachedTunnels = List.of();
 
   public TunnelEditorViewModel(
@@ -33,15 +39,42 @@ public final class TunnelEditorViewModel {
       CredentialRepository credentials,
       TunnelRepository tunnels,
       SaveTunnelUseCase save) {
+    this(hosts, credentials, tunnels, save, null, null, null);
+  }
+
+  public TunnelEditorViewModel(
+      SshHostRepository hosts,
+      CredentialRepository credentials,
+      TunnelRepository tunnels,
+      SaveTunnelUseCase save,
+      ProjectRepository projects,
+      EnvironmentRepository environments,
+      TagRepository tags) {
     this.hosts = Objects.requireNonNull(hosts);
     this.credentials = Objects.requireNonNull(credentials);
     this.tunnels = Objects.requireNonNull(tunnels);
     this.save = Objects.requireNonNull(save);
+    this.projects = projects;
+    this.environments = environments;
+    this.tags = tags;
   }
 
   public List<SshHostRecord> hosts() {
     cachedTunnels = tunnels.findAll();
     return hosts.findAll();
+  }
+
+  public List<com.ssh.tunnelmanager.application.persistence.model.ProjectRecord> projects() {
+    return projects == null ? List.of() : projects.findAll();
+  }
+
+  public List<com.ssh.tunnelmanager.application.persistence.model.EnvironmentRecord>
+      environments() {
+    return environments == null ? List.of() : environments.findAll();
+  }
+
+  public List<com.ssh.tunnelmanager.application.persistence.model.TagRecord> tags() {
+    return tags == null ? List.of() : tags.findAll();
   }
 
   public List<String> validate(Form form) {
@@ -97,7 +130,11 @@ public final class TunnelEditorViewModel {
         optional(record.keepAliveOverrideSeconds()),
         optional(record.connectionTimeoutOverrideSeconds()),
         optional(record.retryCountOverride()),
-        formatOptions(record.sshOptions()));
+        formatOptions(record.sshOptions()),
+        record.projectId(),
+        record.environmentId(),
+        record.tagIds(),
+        record.favorite());
   }
 
   private Tunnel toDomain(Form form) {
@@ -120,10 +157,10 @@ public final class TunnelEditorViewModel {
             parseOptionalLong(form.connectionTimeoutSeconds()),
             parseOptionalInteger(form.retryCount()),
             parseOptions(form.sshOptions(), new ArrayList<>())),
-        null,
-        null,
-        false,
-        java.util.Set.of());
+        form.projectId(),
+        form.environmentId(),
+        form.favorite(),
+        form.tagIds());
   }
 
   private SshHost loadHost(UUID id) {
@@ -235,5 +272,47 @@ public final class TunnelEditorViewModel {
       String keepAliveSeconds,
       String connectionTimeoutSeconds,
       String retryCount,
-      String sshOptions) {}
+      String sshOptions,
+      UUID projectId,
+      UUID environmentId,
+      java.util.Set<UUID> tagIds,
+      boolean favorite) {
+    public Form(
+        UUID id,
+        String name,
+        String bindAddress,
+        String localPort,
+        String destinationHost,
+        String destinationPort,
+        UUID finalHostId,
+        UUID jump1HostId,
+        UUID jump2HostId,
+        String keepAliveSeconds,
+        String connectionTimeoutSeconds,
+        String retryCount,
+        String sshOptions) {
+      this(
+          id,
+          name,
+          bindAddress,
+          localPort,
+          destinationHost,
+          destinationPort,
+          finalHostId,
+          jump1HostId,
+          jump2HostId,
+          keepAliveSeconds,
+          connectionTimeoutSeconds,
+          retryCount,
+          sshOptions,
+          null,
+          null,
+          java.util.Set.of(),
+          false);
+    }
+
+    public Form {
+      tagIds = java.util.Set.copyOf(tagIds == null ? java.util.Set.of() : tagIds);
+    }
+  }
 }

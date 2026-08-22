@@ -2,9 +2,9 @@
 
 ## Estado actual
 
-El milestone 0.2.0 permite gestionar hosts SSH, túneles individuales Local Port
-Forwarding y grupos reutilizables. La organización avanzada, el Hub y las acciones
-de gran volumen todavía pertenecen a fases posteriores.
+El milestone 0.3.0 permite gestionar hosts SSH, túneles individuales Local Port
+Forwarding, grupos reutilizables, organización, favoritos, recientes, búsqueda,
+filtros y acciones de gran volumen.
 
 ## Hosts SSH
 
@@ -61,6 +61,36 @@ túnel y los demás continúan. La tabla muestra el progreso por conteos (`OPEN`
 incluso cuando un túnel también pertenece a otro grupo. Esto no borra ni modifica
 la configuración de los otros grupos. **Duplicar** crea otro grupo con un ID y
 nombre nuevos, conservando inicialmente sus referencias a túneles.
+
+## Organización
+
+En **Organización** puedes crear, editar y eliminar proyectos, entornos y
+etiquetas. Los proyectos y entornos son opcionales y pueden asignarse desde los
+editores de túneles y grupos. Un túnel o grupo puede tener varias etiquetas.
+
+Si una clasificación está en uso, la aplicación muestra sus dependencias antes
+de confirmar el borrado; las referencias de proyecto o entorno quedan vacías.
+
+## Inicio, favoritos y recientes
+
+**Inicio** muestra los favoritos, los ocho elementos iniciados más recientemente
+y los túneles activos. Los recientes se actualizan al pulsar **Iniciar**
+explícitamente; una reconexión automática no crea una entrada nueva.
+
+El resumen permite navegar a los túneles abiertos, reconectando o con error.
+**Detener todos** solicita confirmación antes de parar las conexiones activas.
+
+## Búsqueda, filtros y acciones masivas
+
+Pulsa **Ctrl+K** para buscar túneles, grupos y hosts SSH en el índice local y
+navegar directamente al tipo de resultado. La lista de túneles permite filtrar
+por texto, proyecto, entorno, grupo, estado y una o varias etiquetas. Las
+columnas de las tablas se pueden ordenar pulsando sus cabeceras.
+
+La tabla de túneles admite selección múltiple para iniciar o detener, marcar o
+quitar favoritos, asignar proyecto/entorno, y añadir o quitar la selección de un
+grupo. Estas acciones se ejecutan fuera del hilo de JavaFX y las relaciones se
+guardan de forma transaccional.
 
 ## Fingerprints
 

@@ -132,6 +132,26 @@ public final class TunnelRuntimeManager implements AutoCloseable {
     }
   }
 
+  public Map<UUID, TunnelRuntime> runtimes() {
+    return slots.keySet().stream()
+        .collect(
+            java.util.stream.Collectors.toUnmodifiableMap(tunnelId -> tunnelId, this::runtime));
+  }
+
+  public void stopAll() {
+    List<UUID> ids =
+        runtimes().values().stream()
+            .filter(
+                runtime ->
+                    runtime.desiredState()
+                            == com.ssh.tunnelmanager.domain.tunnel.DesiredState.RUNNING
+                        && runtime.actualState()
+                            != com.ssh.tunnelmanager.domain.tunnel.ActualState.CLOSED)
+            .map(TunnelRuntime::tunnelId)
+            .toList();
+    ids.forEach(this::stop);
+  }
+
   public void subscribe(java.util.function.Consumer<TunnelEvent> listener) {
     events.subscribe(listener);
   }

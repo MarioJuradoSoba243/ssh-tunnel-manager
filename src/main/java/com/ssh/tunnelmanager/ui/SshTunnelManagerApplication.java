@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public final class SshTunnelManagerApplication extends Application {
   private static final Logger LOGGER = LoggerFactory.getLogger(SshTunnelManagerApplication.class);
-  private static final String VERSION = "0.2.0";
+  private static final String VERSION = "0.3.0";
 
   private ApplicationBootstrap bootstrap;
 
