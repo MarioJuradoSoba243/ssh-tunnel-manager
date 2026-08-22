@@ -2,9 +2,9 @@
 
 ## Estado actual
 
-El milestone 0.1.0 permite gestionar hosts SSH y túneles individuales Local Port
-Forwarding. Los grupos, la organización avanzada y las operaciones masivas todavía
-pertenecen a fases posteriores.
+El milestone 0.2.0 permite gestionar hosts SSH, túneles individuales Local Port
+Forwarding y grupos reutilizables. La organización avanzada, el Hub y las acciones
+de gran volumen todavía pertenecen a fases posteriores.
 
 ## Hosts SSH
 
@@ -38,6 +38,29 @@ muestra el historial de eventos de la sesión actual y el error técnico, que se
 puede copiar. **Duplicar** conserva la configuración con un nuevo identificador.
 Si editas un túnel activo, guardar requiere elegir **Guardar y reiniciar**; los
 cambios se aplican a una nueva ejecución.
+
+## Grupos
+
+En **Grupos** pulsa **Nuevo grupo** para abrir el editor dentro del shell. Escribe
+un nombre y utiliza el buscador para seleccionar los túneles miembros. Un túnel
+puede pertenecer a varios grupos y también puede existir sin grupo; el grupo no
+se convierte en propietario de la configuración del túnel.
+
+Antes de guardar, la aplicación avisa si dos miembros usan el mismo endpoint local
+efectivo, por ejemplo `127.0.0.1:5432`. Puedes corregir la selección o confirmar el
+guardado entendiendo que esos túneles no podrán escuchar simultáneamente en ese
+endpoint.
+
+**Iniciar grupo** solicita el inicio de todos sus miembros. Los túneles ya abiertos,
+conectando, reconectando o en cola no se duplican. Un fallo queda aislado en ese
+túnel y los demás continúan. La tabla muestra el progreso por conteos (`OPEN`,
+`CONNECTING`, `QUEUED` y `ERROR`) y estados resumidos `CLOSED`, `STARTING`, `OPEN`,
+`PARTIAL` o `ERROR`.
+
+**Detener grupo** solicita la parada de todos sus miembros activos o iniciándose,
+incluso cuando un túnel también pertenece a otro grupo. Esto no borra ni modifica
+la configuración de los otros grupos. **Duplicar** crea otro grupo con un ID y
+nombre nuevos, conservando inicialmente sus referencias a túneles.
 
 ## Fingerprints
 

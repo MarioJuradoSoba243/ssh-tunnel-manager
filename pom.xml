@@ -6,7 +6,7 @@
 
     <groupId>com.ssh.tunnelmanager</groupId>
     <artifactId>ssh-tunnel-manager</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <name>SSH Tunnel Manager</name>
     <description>Gestor de túneles SSH Local Port Forwarding para Windows 11</description>
 
