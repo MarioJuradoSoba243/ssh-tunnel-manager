@@ -102,6 +102,25 @@ class PersistenceIntegrationIT {
   }
 
   @Test
+  void firstProductionMigrationDoesNotTryToBackupAnEmptySchema(@TempDir Path directory) {
+    DatabaseFactory freshDatabase = new DatabaseFactory(directory.resolve("fresh.db"));
+    BackupService freshBackups = new BackupService(freshDatabase, directory.resolve("backups"));
+
+    new DatabaseMigrator(freshDatabase, freshBackups).migrate();
+
+    int version =
+        freshDatabase.withConnection(
+            connection -> {
+              try (var statement = connection.createStatement();
+                  var result = statement.executeQuery("SELECT MAX(version) FROM schema_version")) {
+                result.next();
+                return result.getInt(1);
+              }
+            });
+    assertThat(version).isEqualTo(1);
+  }
+
+  @Test
   void failedMigrationRollsBackAndKeepsPreviousVersion() {
     MigrationScript broken =
         new MigrationScript(2, "V002__broken", "CREATE TABLE partial_table(id TEXT); INVALID SQL;");
