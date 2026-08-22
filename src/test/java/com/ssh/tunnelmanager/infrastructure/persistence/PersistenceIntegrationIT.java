@@ -163,6 +163,19 @@ class PersistenceIntegrationIT {
     assertThat(groups.findById(groupId))
         .get()
         .satisfies(group -> assertThat(group.tunnelIds()).containsExactly(tunnelId));
+    UUID sharedGroupId = UUID.randomUUID();
+    groups.save(
+        new TunnelGroupRecord(
+            sharedGroupId, "shared", null, null, false, Set.of(tunnelId), Set.of()));
+    assertThat(groups.findById(sharedGroupId))
+        .get()
+        .satisfies(group -> assertThat(group.tunnelIds()).containsExactly(tunnelId));
+    assertThatThrownBy(
+            () ->
+                groups.save(
+                    new TunnelGroupRecord(
+                        UUID.randomUUID(), "ops", null, null, false, Set.of(tunnelId), Set.of())))
+        .isInstanceOf(PersistenceConstraintException.class);
 
     projects.delete(projectId);
     environments.delete(environmentId);
@@ -177,7 +190,11 @@ class PersistenceIntegrationIT {
     assertThat(groups.findById(groupId))
         .get()
         .satisfies(updated -> assertThat(updated.tunnelIds()).isEmpty());
+    assertThat(groups.findById(sharedGroupId))
+        .get()
+        .satisfies(updated -> assertThat(updated.tunnelIds()).isEmpty());
     groups.delete(groupId);
+    groups.delete(sharedGroupId);
     hosts.delete(hostId);
     hosts.delete(jumpId);
     assertThat(credentials.findById(credentialId)).isPresent();
@@ -240,6 +257,24 @@ class PersistenceIntegrationIT {
                     }))
         .isInstanceOf(IllegalStateException.class);
     assertThat(credentials.findById(id)).isEmpty();
+  }
+
+  @Test
+  void groupSaveRollsBackParentWhenMemberForeignKeyFails() {
+    UUID groupId = UUID.randomUUID();
+    assertThatThrownBy(
+            () ->
+                groups.save(
+                    new TunnelGroupRecord(
+                        groupId,
+                        "invalid-member",
+                        null,
+                        null,
+                        false,
+                        Set.of(UUID.randomUUID()),
+                        Set.of())))
+        .isInstanceOf(PersistenceConstraintException.class);
+    assertThat(groups.findById(groupId)).isEmpty();
   }
 
   @Test
