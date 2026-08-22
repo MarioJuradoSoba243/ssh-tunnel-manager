@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Milestone 0.4.0 en validación final.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación dispone del vertical slice de hosts, túneles individuales, grupos, organización, Hub, búsqueda, filtros, acciones masivas, exportación/importación JSON, backups SQLite y recuperación de configuración; el estado exacto de packaging y las tareas pendientes se mantiene en `tasks.md`.
+**Milestone 0.5.0 en validación final.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación dispone del vertical slice de hosts, túneles individuales, grupos, organización, Hub, búsqueda, filtros, acciones masivas, configuración Windows, diagnóstico sanitizado, exportación/importación JSON, backups SQLite y recuperación de configuración; el estado exacto de packaging y las tareas pendientes se mantiene en `tasks.md`.
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -219,7 +219,7 @@ application image, el instalador y el ZIP portable se generan en `dist/`.
 El ejecutable del portable está en la raíz de la carpeta extraída:
 
 ```powershell
-   .\dist\ssh-tunnel-manager-0.4.0-windows-x64-portable\ssh-tunnel-manager.exe
+   .\dist\ssh-tunnel-manager-0.5.0-windows-x64-portable\ssh-tunnel-manager.exe
 ```
 
 Si se parte del ZIP, extráelo completamente antes de ejecutar el `.exe`; no
@@ -228,6 +228,23 @@ ejecutes el archivo desde dentro del visor comprimido.
 Los cambios relacionados con SSH deberán ejecutar además los integration tests correspondientes.
 
 Los cambios de distribución deberán validar `jpackage` en Windows.
+
+### Ajustes Windows y diagnóstico 0.5.0
+
+La sección **Ajustes** permite seleccionar tema claro, oscuro o seguir Windows,
+activar las notificaciones, elegir el nivel de logging y remapear los atajos. Los
+atajos se validan para impedir combinaciones duplicadas. También permite abrir la
+carpeta de logs y generar un ZIP de diagnóstico sin contraseñas.
+
+La aplicación usa una instancia por directorio de datos. Abrir de nuevo el
+portable activa la instancia ya abierta; las instalaciones y portables ubicados
+en directorios distintos mantienen instancias independientes. Al cerrar se
+detienen los túneles y los recursos SSH antes de terminar el proceso. Una
+ejecución anómala se comunica en el siguiente arranque y no reabre túneles.
+
+Los logs se guardan en `%LOCALAPPDATA%\SSH Tunnel Manager\logs` en modo instalado y
+en `data\logs` junto al portable. La rotación es de 10 MB, conserva 10 archivos y
+comprime los anteriores.
 
 ## Distribución objetivo
 

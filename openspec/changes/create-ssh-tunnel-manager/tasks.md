@@ -236,41 +236,41 @@
 
 ## 8. Milestone 0.5.0 — experiencia Windows, diagnóstico y polish
 
-- [ ] 8.1 Implementar aplicación de instancia única y bring-to-front de la instancia existente.
-- [ ] 8.2 Implementar confirmación de cierre cuando existan túneles activos.
-- [ ] 8.3 Implementar parada ordenada de reintentos, túneles y recursos SSH antes de salir.
-- [ ] 8.4 Verificar que la aplicación no permanece residente en tray al cerrar.
+- [x] 8.1 Implementar aplicación de instancia única y bring-to-front de la instancia existente.
+- [x] 8.2 Implementar confirmación de cierre cuando existan túneles activos.
+- [x] 8.3 Implementar parada ordenada de reintentos, túneles y recursos SSH antes de salir.
+- [x] 8.4 Verificar que la aplicación no permanece residente en tray al cerrar.
 - [ ] 8.5 Implementar mecanismo para minimizar procesos/recursos SSH huérfanos ante terminación anómala.
-- [ ] 8.6 Implementar detección de ejecución anterior anómala.
-- [ ] 8.7 Informar del cierre anómalo al siguiente arranque sin reabrir túneles.
-- [ ] 8.8 Implementar manejo de suspensión/hibernación y reconexión normal de túneles cuya intención siga siendo RUNNING.
-- [ ] 8.9 Confirmar que no existe reintento especial al volver la VPN/red después de agotar N intentos.
-- [ ] 8.10 Implementar notificaciones Windows para eventos relevantes.
-- [ ] 8.11 Implementar setting global para activar/desactivar notificaciones.
-- [ ] 8.12 Implementar selección de tema claro, oscuro y seguir Windows.
-- [ ] 8.13 Implementar persistencia del tema seleccionado.
-- [ ] 8.14 Implementar registro y carga de atajos configurables.
-- [ ] 8.15 Implementar pantalla de remapeo de atajos.
-- [ ] 8.16 Detectar y bloquear conflictos ambiguos entre atajos.
-- [ ] 8.17 Mantener los valores iniciales de atajos acordados.
-- [ ] 8.18 Implementar navegación completa por teclado de los flujos principales.
-- [ ] 8.19 Verificar tamaño inicial aproximado 1024×700.
+- [x] 8.6 Implementar detección de ejecución anterior anómala.
+- [x] 8.7 Informar del cierre anómalo al siguiente arranque sin reabrir túneles.
+- [x] 8.8 Implementar manejo de suspensión/hibernación y reconexión normal de túneles cuya intención siga siendo RUNNING.
+- [x] 8.9 Confirmar que no existe reintento especial al volver la VPN/red después de agotar N intentos.
+- [x] 8.10 Implementar notificaciones Windows para eventos relevantes.
+- [x] 8.11 Implementar setting global para activar/desactivar notificaciones.
+- [x] 8.12 Implementar selección de tema claro, oscuro y seguir Windows.
+- [x] 8.13 Implementar persistencia del tema seleccionado.
+- [x] 8.14 Implementar registro y carga de atajos configurables.
+- [x] 8.15 Implementar pantalla de remapeo de atajos.
+- [x] 8.16 Detectar y bloquear conflictos ambiguos entre atajos.
+- [x] 8.17 Mantener los valores iniciales de atajos acordados.
+- [x] 8.18 Implementar navegación completa por teclado de los flujos principales.
+- [x] 8.19 Verificar tamaño inicial aproximado 1024×700.
 - [ ] 8.20 Verificar layouts a 100%, 125%, 150% y 200% de escalado Windows.
-- [ ] 8.21 Verificar que ningún estado dependa exclusivamente del color.
-- [ ] 8.22 Completar mapeo de errores técnicos habituales a mensajes amigables.
-- [ ] 8.23 Completar `Copiar error` con timestamp, túnel, ruta y detalle técnico sin password.
-- [ ] 8.24 Implementar `Abrir carpeta de logs`.
-- [ ] 8.25 Configurar rolling logs de 10 MB, 10 archivos y compresión.
-- [ ] 8.26 Verificar `TRACE`, `DEBUG`, `INFO`, `WARN` y `ERROR`.
-- [ ] 8.27 Implementar `Exportar diagnóstico` ZIP.
-- [ ] 8.28 Incluir en diagnóstico versión app, Windows, logs, configuración sanitizada, runtime y errores.
-- [ ] 8.29 Verificar automáticamente que el diagnóstico no contiene passwords.
+- [x] 8.21 Verificar que ningún estado dependa exclusivamente del color.
+- [x] 8.22 Completar mapeo de errores técnicos habituales a mensajes amigables.
+- [x] 8.23 Completar `Copiar error` con timestamp, túnel, ruta y detalle técnico sin password.
+- [x] 8.24 Implementar `Abrir carpeta de logs`.
+- [x] 8.25 Configurar rolling logs de 10 MB, 10 archivos y compresión.
+- [x] 8.26 Verificar `TRACE`, `DEBUG`, `INFO`, `WARN` y `ERROR`.
+- [x] 8.27 Implementar `Exportar diagnóstico` ZIP.
+- [x] 8.28 Incluir en diagnóstico versión app, Windows, logs, configuración sanitizada, runtime y errores.
+- [x] 8.29 Verificar automáticamente que el diagnóstico no contiene passwords.
 - [ ] 8.30 Añadir smoke tests JavaFX de arranque, navegación, crear host, crear túnel y búsqueda global.
-- [ ] 8.31 Añadir tests de lifecycle de aplicación/instancia única cuando sean automatizables.
-- [ ] 8.32 Completar la guía de usuario de ajustes, atajos, temas, notificaciones, logs, diagnóstico y recuperación.
-- [ ] 8.33 Revisar toda la guía en español contra el comportamiento implementado hasta `0.5.0`.
-- [ ] 8.34 Generar y verificar instalador/portable `0.5.0`.
-- [ ] 8.35 Ejecutar `.\mvnw.cmd verify`.
+- [x] 8.31 Añadir tests de lifecycle de aplicación/instancia única cuando sean automatizables.
+- [x] 8.32 Completar la guía de usuario de ajustes, atajos, temas, notificaciones, logs, diagnóstico y recuperación.
+- [x] 8.33 Revisar toda la guía en español contra el comportamiento implementado hasta `0.5.0`.
+- [x] 8.34 Generar y verificar instalador/portable `0.5.0`.
+- [x] 8.35 Ejecutar `.\mvnw.cmd verify`.
 
 ## 9. Cierre de v1 / 1.0.0
 

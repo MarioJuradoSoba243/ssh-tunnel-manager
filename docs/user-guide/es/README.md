@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-El milestone 0.4.0 permite gestionar hosts SSH, túneles individuales Local Port
+El milestone 0.5.0 permite gestionar hosts SSH, túneles individuales Local Port
 Forwarding, grupos reutilizables, organización, favoritos, recientes, búsqueda,
 filtros, acciones de gran volumen, exportación/importación y backups SQLite.
 
@@ -145,3 +145,40 @@ En una instalación normal, la base y sus datos se guardan en
 `data\backups\` y `data\logs\`. Para trasladarlo, cierra la aplicación y copia
 la carpeta completa a otro directorio Windows compatible; mantén `portable.flag`
 junto a `ssh-tunnel-manager.exe`.
+
+## Ajustes de Windows
+
+En **Ajustes** puedes seleccionar **LIGHT**, **DARK** o **SYSTEM** para seguir el
+tema de Windows; el cambio se aplica inmediatamente y queda guardado. También
+puedes activar o desactivar las notificaciones Windows y elegir el nivel de
+logging (`TRACE`, `DEBUG`, `INFO`, `WARN` o `ERROR`). Los logs rotan al alcanzar
+10 MB, conservan diez archivos y comprimen los anteriores.
+
+La aplicación mantiene una sola instancia por directorio de datos. Si vuelves a
+abrirla, la instancia existente pasa al frente. Una instalación y un portable en
+directorios distintos pueden ejecutarse por separado. El cierre solicita
+confirmación cuando hay túneles activos, detiene los reintentos y libera los
+recursos SSH; no queda ningún proceso residente en la bandeja. Tras una
+terminación anómala se muestra una advertencia en el siguiente arranque y no se
+reabren túneles automáticamente. Después de suspender o hibernar el equipo, los
+túneles cuya intención siga siendo `RUNNING` entran en el flujo normal de
+reconexión.
+
+## Atajos y accesibilidad
+
+En **Ajustes** puedes remapear `Ctrl+K` (búsqueda), `Ctrl+N` (nuevo túnel),
+`Ctrl+F` (filtro), `F5` (refrescar), `Enter` (abrir selección) y `Esc` (volver o
+cerrar un diálogo). No se permiten combinaciones duplicadas. Los estados se
+comunican con texto y no dependen únicamente del color; la ventana inicia
+aproximadamente en 1024×700 y se puede redimensionar.
+
+## Diagnóstico
+
+**Exportar diagnóstico ZIP** genera el paquete fuera del hilo de JavaFX con
+`system.txt`, `runtime-state.json`, `configuration.json` sanitizado y logs
+recientes. Las contraseñas nunca se incluyen. **Abrir carpeta de logs** abre la
+ubicación correspondiente al modo instalado o portable.
+
+Los errores muestran un mensaje amigable. **Ver detalles** y **Copiar error**
+incluyen timestamp, túnel, estado, ruta y detalle técnico sanitizado, pero nunca
+contraseñas.
