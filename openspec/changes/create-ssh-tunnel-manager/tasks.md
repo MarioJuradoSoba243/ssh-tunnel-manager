@@ -208,31 +208,31 @@
 
 ## 7. Milestone 0.4.0 — exportación, importación, backups y portabilidad
 
-- [ ] 7.1 Definir DTOs del formato JSON de exportación con `formatVersion = 1`.
-- [ ] 7.2 Implementar exportación completa de hosts, credentials, túneles, grupos, organización, settings, fingerprints, favoritos y recientes.
-- [ ] 7.3 Incluir passwords en la exportación completa y mostrar la advertencia acordada.
-- [ ] 7.4 Implementar importación de `formatVersion = 1`.
-- [ ] 7.5 Clasificar entidades importadas por ID como nuevas, sin cambios o conflicto.
-- [ ] 7.6 Implementar resolución `Conservar actual`.
-- [ ] 7.7 Implementar resolución `Reemplazar`.
-- [ ] 7.8 Implementar resolución `Crear copia` con nuevo UUID y nombre no conflictivo.
-- [ ] 7.9 Implementar aplicación de una estrategia a múltiples conflictos.
-- [ ] 7.10 Implementar preview/resumen de importación antes del commit.
-- [ ] 7.11 Ejecutar importación completa en una única operación transaccional apropiada.
-- [ ] 7.12 Impedir import/restauración con túneles activos sin ofrecer `Detener todos y continuar`.
-- [ ] 7.13 Implementar UI de backups automáticos disponibles.
-- [ ] 7.14 Implementar restauración creando primero un snapshot de seguridad del estado actual.
-- [ ] 7.15 Implementar flujo de recuperación al detectar base corrupta.
-- [ ] 7.16 Validar que la distribución portable almacena DB, backups y logs bajo `<application>/data/`.
-- [ ] 7.17 Validar que la distribución instalada almacena datos por usuario bajo `%LOCALAPPDATA%`.
-- [ ] 7.18 Validar copia del directorio portable a otra máquina/entorno Windows compatible.
-- [ ] 7.19 Añadir tests round-trip export → import.
-- [ ] 7.20 Añadir tests de conflictos y `Crear copia`.
-- [ ] 7.21 Añadir tests de backup/restore con credenciales.
-- [ ] 7.22 Añadir tests de compatibilidad del `formatVersion`.
-- [ ] 7.23 Documentar exportación, passwords en export, importación, conflictos, backups, restauración, corrupción y modo portable.
-- [ ] 7.24 Generar y verificar instalador/portable `0.4.0`.
-- [ ] 7.25 Ejecutar `.\mvnw.cmd verify`.
+- [x] 7.1 Definir DTOs del formato JSON de exportación con `formatVersion = 1`.
+- [x] 7.2 Implementar exportación completa de hosts, credentials, túneles, grupos, organización, settings, fingerprints, favoritos y recientes.
+- [x] 7.3 Incluir passwords en la exportación completa y mostrar la advertencia acordada.
+- [x] 7.4 Implementar importación de `formatVersion = 1`.
+- [x] 7.5 Clasificar entidades importadas por ID como nuevas, sin cambios o conflicto.
+- [x] 7.6 Implementar resolución `Conservar actual`.
+- [x] 7.7 Implementar resolución `Reemplazar`.
+- [x] 7.8 Implementar resolución `Crear copia` con nuevo UUID y nombre no conflictivo.
+- [x] 7.9 Implementar aplicación de una estrategia a múltiples conflictos.
+- [x] 7.10 Implementar preview/resumen de importación antes del commit.
+- [x] 7.11 Ejecutar importación completa en una única operación transaccional apropiada.
+- [x] 7.12 Impedir import/restauración con túneles activos sin ofrecer `Detener todos y continuar`.
+- [x] 7.13 Implementar UI de backups automáticos disponibles.
+- [x] 7.14 Implementar restauración creando primero un snapshot de seguridad del estado actual.
+- [x] 7.15 Implementar flujo de recuperación al detectar base corrupta.
+- [x] 7.16 Validar que la distribución portable almacena DB, backups y logs bajo `<application>/data/`.
+- [x] 7.17 Validar que la distribución instalada almacena datos por usuario bajo `%LOCALAPPDATA%`.
+- [x] 7.18 Validar copia del directorio portable a otra máquina/entorno Windows compatible (reproducido en otra carpeta Windows limpia).
+- [x] 7.19 Añadir tests round-trip export → import.
+- [x] 7.20 Añadir tests de conflictos y `Crear copia`.
+- [x] 7.21 Añadir tests de backup/restore con credenciales.
+- [x] 7.22 Añadir tests de compatibilidad del `formatVersion`.
+- [x] 7.23 Documentar exportación, passwords en export, importación, conflictos, backups, restauración, corrupción y modo portable.
+- [x] 7.24 Generar y verificar instalador/portable `0.4.0`.
+- [x] 7.25 Ejecutar `.\mvnw.cmd verify`.
 
 ## 8. Milestone 0.5.0 — experiencia Windows, diagnóstico y polish
 

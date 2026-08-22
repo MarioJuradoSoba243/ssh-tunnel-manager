@@ -2,9 +2,9 @@
 
 ## Estado actual
 
-El milestone 0.3.0 permite gestionar hosts SSH, túneles individuales Local Port
+El milestone 0.4.0 permite gestionar hosts SSH, túneles individuales Local Port
 Forwarding, grupos reutilizables, organización, favoritos, recientes, búsqueda,
-filtros y acciones de gran volumen.
+filtros, acciones de gran volumen, exportación/importación y backups SQLite.
 
 ## Hosts SSH
 
@@ -104,3 +104,44 @@ muestra la fingerprint anterior y la nueva. Desde **Hosts SSH** puedes usar
 Los fallos de prueba muestran el detalle técnico y permiten copiarlo. Un puerto
 local ocupado se informa explícitamente; la aplicación no selecciona otro puerto
 automáticamente.
+
+## Exportar e importar
+
+En **Ajustes**, **Exportar configuración JSON** crea un archivo con hosts,
+credenciales, túneles, grupos, proyectos, entornos, etiquetas, fingerprints,
+favoritos, recientes y atajos. Las contraseñas SSH son datos recuperables en
+esta exportación completa: guárdala como información sensible y no la adjuntes
+en diagnósticos.
+
+**Importar configuración JSON** muestra primero cuántos elementos son nuevos,
+no han cambiado o entran en conflicto. Para cada conflicto se puede elegir
+**Conservar actual**, **Reemplazar** o **Crear copia**. Crear copia genera un
+UUID y un nombre no conflictivo para entidades que admiten duplicación. Las
+trusted host keys, settings y atajos tienen identidad única y solo permiten
+conservar o reemplazar. Una importación inválida se rechaza sin dejar cambios
+parciales. Si hay túneles activos, puedes cancelar o elegir **Detener todos y
+continuar**.
+
+## Backups y restauración
+
+En **Ajustes**, **Ver backups y restaurar** lista los snapshots SQLite válidos.
+Se crean con un snapshot consistente (`VACUUM INTO`) y se conservan los diez
+últimos. Si existen cambios, se intenta un backup periódico cada 30 minutos;
+además se crea uno antes de importar, restaurar o migrar el esquema. La
+restauración crea primero un snapshot de seguridad del estado actual y también
+requiere detener los túneles activos o cancelar.
+
+Si la base principal está dañada o no puede abrirse, la aplicación no crea una
+configuración vacía ni la sobrescribe automáticamente. Muestra un modo de
+recuperación con los backups utilizables. Tras restaurar, conserva la base
+dañada con un nombre `.corrupt-<timestamp>.db` para facilitar una investigación
+posterior.
+
+## Instalado y portable
+
+En una instalación normal, la base y sus datos se guardan en
+`%LOCALAPPDATA%\SSH Tunnel Manager\`. En el portable se guardan bajo
+`data\` junto al ejecutable: `data\ssh-tunnel-manager.db`,
+`data\backups\` y `data\logs\`. Para trasladarlo, cierra la aplicación y copia
+la carpeta completa a otro directorio Windows compatible; mantén `portable.flag`
+junto a `ssh-tunnel-manager.exe`.

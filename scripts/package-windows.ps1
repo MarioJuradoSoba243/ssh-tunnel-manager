@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
-$version = '0.3.0'
+$version = '0.4.0'
 $appName = 'ssh-tunnel-manager'
 $targetDirectory = Join-Path $projectRoot 'target'
 $inputDirectory = Join-Path $targetDirectory 'package-input'
@@ -92,6 +92,9 @@ if ($Type -in @('installer', 'all')) {
 if ($Type -in @('portable', 'all')) {
     $portableFlag = Join-Path $imageDirectory 'portable.flag'
     New-Item -ItemType File -Path $portableFlag -Force | Out-Null
+    foreach ($directory in @('data', 'data\backups', 'data\logs')) {
+        New-Item -ItemType Directory -Path (Join-Path $imageDirectory $directory) -Force | Out-Null
+    }
     $portableZip = Join-Path $distDirectory "$appName-$version-windows-x64-portable.zip"
     if (Test-Path $portableZip) {
         Remove-Item -LiteralPath $portableZip -Force

@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Milestone 0.3.0 en validación final.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación dispone del vertical slice de hosts, túneles individuales, grupos, organización, Hub, búsqueda, filtros y acciones masivas; el estado exacto de packaging y las tareas pendientes se mantiene en `tasks.md`.
+**Milestone 0.4.0 en validación final.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación dispone del vertical slice de hosts, túneles individuales, grupos, organización, Hub, búsqueda, filtros, acciones masivas, exportación/importación JSON, backups SQLite y recuperación de configuración; el estado exacto de packaging y las tareas pendientes se mantiene en `tasks.md`.
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -111,6 +111,29 @@ El detalle completo está en:
 openspec/changes/create-ssh-tunnel-manager/tasks.md
 ```
 
+## Exportación, importación y backups
+
+Desde **Ajustes** se puede exportar la configuración completa a JSON e importarla
+con una vista previa. La exportación incluye las contraseñas SSH recuperables y
+la aplicación muestra una advertencia antes de crear el archivo. El formato
+declara `formatVersion: 1` y no incluye estados runtime de túneles.
+
+La importación clasifica los registros por UUID y permite conservar el estado
+actual, reemplazarlo o crear una copia con UUID y nombre nuevos. Una importación
+o restauración exige que no haya túneles activos; la UI ofrece detenerlos todos y
+continuar. Antes de ambas operaciones se crea un snapshot de seguridad.
+
+Los backups son snapshots SQLite consistentes creados con `VACUUM INTO`, no una
+copia directa del archivo en uso. Se conservan los diez más recientes y se crea
+un backup periódico cuando hay cambios. Si la base no puede abrirse, la
+aplicación entra en modo de recuperación y permite restaurar un backup válido
+sin sobrescribir silenciosamente la base dañada.
+
+El modo instalado usa `%LOCALAPPDATA%\SSH Tunnel Manager\` y el portable usa
+`<directorio-de-la-aplicacion>\data\` para la base, `backups\` y `logs\`. Para
+mover el portable, cierra la aplicación y copia la carpeta completa; el archivo
+`portable.flag` debe permanecer junto al ejecutable.
+
 ## Build
 
 Los comandos canónicos del bootstrap son:
@@ -196,7 +219,7 @@ application image, el instalador y el ZIP portable se generan en `dist/`.
 El ejecutable del portable está en la raíz de la carpeta extraída:
 
 ```powershell
-.\dist\ssh-tunnel-manager-0.3.0-windows-x64-portable\ssh-tunnel-manager.exe
+   .\dist\ssh-tunnel-manager-0.4.0-windows-x64-portable\ssh-tunnel-manager.exe
 ```
 
 Si se parte del ZIP, extráelo completamente antes de ejecutar el `.exe`; no
