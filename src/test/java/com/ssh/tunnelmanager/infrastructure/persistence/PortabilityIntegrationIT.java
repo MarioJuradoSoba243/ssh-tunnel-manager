@@ -53,6 +53,10 @@ class PortabilityIntegrationIT {
 
     String json = read(export);
     assertThat(json).contains("\"formatVersion\" : 1").contains("portable-secret");
+    var document = new ConfigurationJsonCodec().read(export);
+    assertThat(document.formatVersion()).isEqualTo(1);
+    assertThat(document.applicationVersion()).isEqualTo("0.4.0");
+    assertThat(document.databaseSchemaVersion()).isEqualTo(1);
     DatabaseFactory targetDatabase = database(directory.resolve("target.db"));
     JdbcConfigurationStore target = new JdbcConfigurationStore(targetDatabase);
     CountingBackups backups = new CountingBackups();

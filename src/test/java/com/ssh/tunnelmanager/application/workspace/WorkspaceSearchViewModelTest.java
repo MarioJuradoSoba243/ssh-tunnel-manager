@@ -24,7 +24,7 @@ class WorkspaceSearchViewModelTest {
     HostStore hosts = new HostStore();
     UUID hostId = UUID.randomUUID();
     hosts.save(new SshHostRecord(hostId, "production", "prod.example", 22, UUID.randomUUID()));
-    for (int index = 0; index < 120; index++) {
+    for (int index = 0; index < 500; index++) {
       tunnels.save(tunnel(hostId, index));
     }
     UUID groupId = UUID.randomUUID();
@@ -32,14 +32,14 @@ class WorkspaceSearchViewModelTest {
     WorkspaceSearchViewModel search = new WorkspaceSearchViewModel(tunnels, groups, hosts);
     search.refresh();
 
-    assertThat(search.search("service-119")).hasSize(1);
+    assertThat(search.search("service-499")).hasSize(1);
     assertThat(search.search("PRODUCTION"))
         .extracting(SearchResult::kind)
         .containsExactly(SearchResult.Kind.HOST);
     assertThat(search.search("backend"))
         .extracting(SearchResult::kind)
         .containsExactly(SearchResult.Kind.GROUP);
-    assertThat(tunnels.findAll()).hasSize(120);
+    assertThat(tunnels.findAll()).hasSize(500);
   }
 
   @Test
@@ -66,7 +66,7 @@ class WorkspaceSearchViewModelTest {
     UUID tagId = UUID.randomUUID();
     UUID groupId = UUID.randomUUID();
     List<TunnelRecord> values = new ArrayList<>();
-    for (int index = 0; index < 120; index++) {
+    for (int index = 0; index < 500; index++) {
       values.add(
           new TunnelRecord(
               UUID.randomUUID(),
@@ -81,15 +81,15 @@ class WorkspaceSearchViewModelTest {
               null,
               null,
               null,
-              index == 119 ? projectId : null,
-              index == 119 ? environmentId : null,
+              index == 499 ? projectId : null,
+              index == 499 ? environmentId : null,
               false,
-              index == 119 ? Set.of(tagId) : Set.of(),
+              index == 499 ? Set.of(tagId) : Set.of(),
               Map.of()));
     }
     values.forEach(tunnels::save);
     TunnelFilter filter =
-        new TunnelFilter("service-119", projectId, environmentId, groupId, Set.of(tagId), null);
+        new TunnelFilter("service-499", projectId, environmentId, groupId, Set.of(tagId), null);
 
     assertThat(
             values.stream()
@@ -103,7 +103,7 @@ class WorkspaceSearchViewModelTest {
         .hasSize(1)
         .first()
         .extracting(TunnelRecord::name)
-        .isEqualTo("service-119");
+        .isEqualTo("service-499");
   }
 
   private static TunnelRecord tunnel(UUID hostId, int index) {
