@@ -8,6 +8,8 @@ import com.ssh.tunnelmanager.application.persistence.model.KeyboardShortcutRecor
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import org.junit.jupiter.api.Test;
 
 class ShortcutRegistryTest {
@@ -30,8 +32,21 @@ class ShortcutRegistryTest {
         .isInstanceOf(ShortcutConflictException.class);
   }
 
+  @Test
+  void cachesShortcutsSoKeyEventsDoNotQuerySqliteRepeatedly() {
+    InMemoryRepository repository = new InMemoryRepository();
+    ShortcutRegistry registry = new ShortcutRegistry(repository);
+    KeyEvent event =
+        new KeyEvent(KeyEvent.KEY_PRESSED, "k", "K", KeyCode.K, false, true, false, false);
+
+    assertThat(registry.matches(ShortcutAction.GLOBAL_SEARCH, event)).isTrue();
+    assertThat(registry.matches(ShortcutAction.GLOBAL_SEARCH, event)).isTrue();
+    assertThat(repository.findAllCalls).isEqualTo(1);
+  }
+
   private static final class InMemoryRepository implements KeyboardShortcutRepository {
     private final List<KeyboardShortcutRecord> values = new ArrayList<>();
+    private int findAllCalls;
 
     @Override
     public Optional<KeyboardShortcutRecord> findByAction(String action) {
@@ -40,6 +55,7 @@ class ShortcutRegistryTest {
 
     @Override
     public List<KeyboardShortcutRecord> findAll() {
+      findAllCalls++;
       return List.copyOf(values);
     }
 

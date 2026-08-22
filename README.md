@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Milestone 0.5.0 en validación final.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación dispone del vertical slice de hosts, túneles individuales, grupos, organización, Hub, búsqueda, filtros, acciones masivas, configuración Windows, diagnóstico sanitizado, exportación/importación JSON, backups SQLite y recuperación de configuración; el estado exacto de packaging y las tareas pendientes se mantiene en `tasks.md`.
+**v1.0.0 en validación final.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación dispone del vertical slice de hosts, túneles individuales, grupos, organización, Hub, búsqueda, filtros, acciones masivas, configuración Windows, diagnóstico sanitizado, exportación/importación JSON, backups SQLite y recuperación de configuración; el estado exacto de validación y las tareas pendientes se mantiene en `tasks.md`.
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -219,7 +219,7 @@ application image, el instalador y el ZIP portable se generan en `dist/`.
 El ejecutable del portable está en la raíz de la carpeta extraída:
 
 ```powershell
-   .\dist\ssh-tunnel-manager-0.5.0-windows-x64-portable\ssh-tunnel-manager.exe
+   .\dist\ssh-tunnel-manager-1.0.0-windows-x64-portable\ssh-tunnel-manager.exe
 ```
 
 Si se parte del ZIP, extráelo completamente antes de ejecutar el `.exe`; no
@@ -229,7 +229,7 @@ Los cambios relacionados con SSH deberán ejecutar además los integration tests
 
 Los cambios de distribución deberán validar `jpackage` en Windows.
 
-### Ajustes Windows y diagnóstico 0.5.0
+### Ajustes Windows y diagnóstico
 
 La sección **Ajustes** permite seleccionar tema claro, oscuro o seguir Windows,
 activar las notificaciones, elegir el nivel de logging y remapear los atajos. Los

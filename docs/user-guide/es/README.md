@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-El milestone 0.5.0 permite gestionar hosts SSH, túneles individuales Local Port
+La versión 1.0.0 permite gestionar hosts SSH, túneles individuales Local Port
 Forwarding, grupos reutilizables, organización, favoritos, recientes, búsqueda,
 filtros, acciones de gran volumen, exportación/importación y backups SQLite.
 

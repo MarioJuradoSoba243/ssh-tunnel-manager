@@ -68,7 +68,7 @@ class ZipDiagnosticServiceTest {
     DataDirectories directories =
         new DataDirectories(directory, directory.resolve("db"), directory.resolve("backups"), logs);
     Path output = directory.resolve("diagnostic.zip");
-    new ZipDiagnosticService(store, runtime, directories, "0.5.0").export(output);
+    new ZipDiagnosticService(store, runtime, directories, "1.0.0").export(output);
     runtime.close();
     try (ZipFile zip = new ZipFile(output.toFile())) {
       var entries = zip.entries();

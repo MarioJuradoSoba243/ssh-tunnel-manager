@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public final class SshTunnelManagerApplication extends Application {
   private static final Logger LOGGER = LoggerFactory.getLogger(SshTunnelManagerApplication.class);
-  private static final String VERSION = "0.5.0";
+  private static final String VERSION = "1.0.0";
   private static final String EXECUTION_MARKER = "application.run.marker";
 
   private ApplicationBootstrap bootstrap;

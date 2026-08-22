@@ -17,12 +17,15 @@ public final class ShortcutRegistry {
   private static final List<String> MODIFIERS = List.of("CTRL", "SHIFT", "ALT");
   private static final Logger LOGGER = LoggerFactory.getLogger(ShortcutRegistry.class);
   private final KeyboardShortcutRepository repository;
+  private volatile Map<ShortcutAction, String> cachedValues;
 
   public ShortcutRegistry(KeyboardShortcutRepository repository) {
     this.repository = repository;
   }
 
   public Map<ShortcutAction, String> load() {
+    Map<ShortcutAction, String> current = cachedValues;
+    if (current != null) return current;
     Map<ShortcutAction, String> values = defaults();
     for (KeyboardShortcutRecord record : repository.findAll()) {
       try {
@@ -33,7 +36,9 @@ public final class ShortcutRegistry {
         LOGGER.debug("Se ignora un atajo persistido no compatible: {}", record.action(), exception);
       }
     }
-    return Map.copyOf(values);
+    current = Map.copyOf(values);
+    cachedValues = current;
+    return current;
   }
 
   public void replace(Map<ShortcutAction, String> requested) {
@@ -42,6 +47,7 @@ public final class ShortcutRegistry {
     validateConflicts(values);
     values.forEach(
         (action, shortcut) -> repository.save(new KeyboardShortcutRecord(action.name(), shortcut)));
+    cachedValues = Map.copyOf(values);
   }
 
   public static Map<ShortcutAction, String> defaults() {
