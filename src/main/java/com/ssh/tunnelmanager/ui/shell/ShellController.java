@@ -1,8 +1,13 @@
 package com.ssh.tunnelmanager.ui.shell;
 
 import com.ssh.tunnelmanager.application.bootstrap.ApplicationComponents;
+import com.ssh.tunnelmanager.application.group.GroupConflictException;
+import com.ssh.tunnelmanager.application.group.GroupEditorViewModel;
+import com.ssh.tunnelmanager.application.group.GroupListViewModel;
+import com.ssh.tunnelmanager.application.group.GroupRuntimeStatus;
 import com.ssh.tunnelmanager.application.host.HostListViewModel;
 import com.ssh.tunnelmanager.application.persistence.model.SshHostRecord;
+import com.ssh.tunnelmanager.application.persistence.model.TunnelGroupRecord;
 import com.ssh.tunnelmanager.application.persistence.model.TunnelRecord;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntime;
 import com.ssh.tunnelmanager.application.shell.NavigationItem;
@@ -14,13 +19,17 @@ import com.ssh.tunnelmanager.domain.host.SshHost;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -41,6 +50,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -58,9 +68,13 @@ public final class ShellController implements AutoCloseable {
   private HostListViewModel hosts;
   private TunnelListViewModel tunnels;
   private TunnelEditorViewModel tunnelEditor;
+  private GroupListViewModel groups;
+  private GroupEditorViewModel groupEditor;
   private TableView<TunnelRecord> tunnelTable;
+  private TableView<GroupRow> groupTable;
   private Timeline statusRefresh;
   private boolean editingTunnel;
+  private boolean editingGroup;
 
   public ShellController(ShellViewModel viewModel) {
     this(viewModel, null);
@@ -92,6 +106,16 @@ public final class ShellController implements AutoCloseable {
               components.credentialRepository(),
               components.tunnelRepository(),
               components.saveTunnel());
+      groups =
+          new GroupListViewModel(
+              components.groupRepository(),
+              components.groupStatus(),
+              components.saveGroup(),
+              components.deleteGroup(),
+              components.duplicateGroup(),
+              components.startGroup(),
+              components.stopGroup());
+      groupEditor = new GroupEditorViewModel(components.tunnelRepository(), components.saveGroup());
     }
   }
 
@@ -121,6 +145,7 @@ public final class ShellController implements AutoCloseable {
   private void showSection(NavigationItem item) {
     stopStatusRefresh();
     editingTunnel = false;
+    editingGroup = false;
     sectionTitle.setText(item.label());
     contentContainer
         .getChildren()
@@ -128,9 +153,218 @@ public final class ShellController implements AutoCloseable {
     switch (item.id()) {
       case "hosts" -> showHosts();
       case "tunnels" -> showTunnels();
+      case "groups" -> showGroups();
       default ->
           sectionDescription.setText("Esta sección estará disponible en una fase posterior.");
     }
+  }
+
+  private void showGroups() {
+    stopStatusRefresh();
+    editingGroup = false;
+    sectionDescription.setText(
+        "Agrupa túneles reutilizables y opera sus conexiones sin ownership exclusivo.");
+    if (groups == null) return;
+    groupTable = new TableView<>();
+    TableColumn<GroupRow, String> name = new TableColumn<>("Nombre");
+    name.setCellValueFactory(
+        data -> new javafx.beans.property.SimpleStringProperty(data.getValue().group().name()));
+    TableColumn<GroupRow, String> members = new TableColumn<>("Túneles");
+    members.setCellValueFactory(
+        data ->
+            new javafx.beans.property.SimpleStringProperty(
+                Integer.toString(data.getValue().group().tunnelIds().size())));
+    TableColumn<GroupRow, String> state = new TableColumn<>("Estado");
+    state.setCellValueFactory(
+        data ->
+            new javafx.beans.property.SimpleStringProperty(
+                groupStateText(data.getValue().status())));
+    groupTable.getColumns().addAll(name, members, state);
+    groupTable.setOnMouseClicked(
+        event -> {
+          if (event.getClickCount() == 2
+              && groupTable.getSelectionModel().getSelectedItem() != null)
+            openGroupEditor(groupTable.getSelectionModel().getSelectedItem().group());
+        });
+    Button add = new Button("Nuevo grupo");
+    Button edit = new Button("Editar");
+    Button duplicate = new Button("Duplicar");
+    Button remove = new Button("Eliminar");
+    Button start = new Button("Iniciar grupo");
+    Button stop = new Button("Detener grupo");
+    add.setOnAction(event -> openGroupEditor(null));
+    edit.setOnAction(event -> editSelectedGroup());
+    duplicate.setOnAction(event -> duplicateSelectedGroup());
+    remove.setOnAction(event -> deleteSelectedGroup());
+    start.setOnAction(event -> operateSelectedGroup(groups::start));
+    stop.setOnAction(event -> operateSelectedGroup(groups::stop));
+    contentContainer
+        .getChildren()
+        .addAll(groupTable, new HBox(8, add, edit, duplicate, remove, start, stop));
+    refreshGroups(groupTable);
+    statusRefresh =
+        new Timeline(
+            new KeyFrame(javafx.util.Duration.seconds(1), event -> refreshGroups(groupTable)));
+    statusRefresh.setCycleCount(Timeline.INDEFINITE);
+    statusRefresh.play();
+  }
+
+  private void refreshGroups(TableView<GroupRow> table) {
+    workers.submit(
+        () -> {
+          List<GroupRow> values =
+              groups.groups().stream()
+                  .map(group -> new GroupRow(group, groups.status(group.id())))
+                  .toList();
+          Platform.runLater(
+              () -> {
+                if (table == groupTable) table.setItems(FXCollections.observableArrayList(values));
+              });
+        });
+  }
+
+  private void editSelectedGroup() {
+    GroupRow selected =
+        groupTable == null ? null : groupTable.getSelectionModel().getSelectedItem();
+    if (selected != null) openGroupEditor(selected.group());
+  }
+
+  private void duplicateSelectedGroup() {
+    GroupRow selected =
+        groupTable == null ? null : groupTable.getSelectionModel().getSelectedItem();
+    if (selected == null) return;
+    TextInputDialog dialog = new TextInputDialog(selected.group().name() + " (copia)");
+    dialog.setTitle("Duplicar grupo");
+    dialog.setHeaderText("Nombre de la copia");
+    dialog
+        .showAndWait()
+        .ifPresent(name -> workers.submit(() -> groups.duplicate(selected.group().id(), name)));
+  }
+
+  private void deleteSelectedGroup() {
+    GroupRow selected =
+        groupTable == null ? null : groupTable.getSelectionModel().getSelectedItem();
+    if (selected == null) return;
+    Alert confirmation =
+        new Alert(
+            Alert.AlertType.CONFIRMATION, "Se eliminará el grupo; sus túneles no se borrarán.");
+    confirmation.setHeaderText("Eliminar grupo");
+    if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+    workers.submit(() -> groups.delete(selected.group().id()));
+  }
+
+  private void operateSelectedGroup(java.util.function.Function<UUID, Object> operation) {
+    GroupRow selected =
+        groupTable == null ? null : groupTable.getSelectionModel().getSelectedItem();
+    if (selected != null) workers.submit(() -> operation.apply(selected.group().id()));
+  }
+
+  private void openGroupEditor(TunnelGroupRecord existing) {
+    if (groupEditor == null) return;
+    workers.submit(
+        () -> {
+          List<TunnelRecord> available = groupEditor.availableTunnels();
+          Platform.runLater(() -> showGroupEditor(existing, available));
+        });
+  }
+
+  private void showGroupEditor(TunnelGroupRecord existing, List<TunnelRecord> available) {
+    editingGroup = true;
+    stopStatusRefresh();
+    contentContainer
+        .getChildren()
+        .removeIf(node -> node != sectionTitle && node != sectionDescription);
+    sectionDescription.setText(
+        "Editor de grupo: busca túneles, revisa conflictos y guarda la selección.");
+    GroupEditorViewModel.Form initial =
+        existing == null
+            ? new GroupEditorViewModel.Form(null, "", Set.of())
+            : groupEditor.fromRecord(existing);
+    TextField name = new TextField(initial.name());
+    TextField search = new TextField();
+    search.setPromptText("Buscar túneles por nombre o endpoint");
+    TableView<GroupChoice> choices = new TableView<>();
+    List<GroupChoice> rows =
+        available.stream()
+            .map(tunnel -> new GroupChoice(tunnel, initial.tunnelIds().contains(tunnel.id())))
+            .toList();
+    FilteredList<GroupChoice> filtered =
+        new FilteredList<>(FXCollections.observableArrayList(rows), ignored -> true);
+    search
+        .textProperty()
+        .addListener(
+            (observable, old, value) ->
+                filtered.setPredicate(
+                    row -> {
+                      String query = value == null ? "" : value.trim().toLowerCase();
+                      return query.isEmpty()
+                          || row.tunnel().name().toLowerCase().contains(query)
+                          || row.endpoint().toLowerCase().contains(query);
+                    }));
+    TableColumn<GroupChoice, Boolean> selected = new TableColumn<>("Incluir");
+    selected.setCellValueFactory(data -> data.getValue().selected());
+    selected.setCellFactory(CheckBoxTableCell.forTableColumn(selected));
+    TableColumn<GroupChoice, String> tunnelName = new TableColumn<>("Túnel");
+    tunnelName.setCellValueFactory(
+        data -> new javafx.beans.property.SimpleStringProperty(data.getValue().tunnel().name()));
+    TableColumn<GroupChoice, String> endpoint = new TableColumn<>("Endpoint local");
+    endpoint.setCellValueFactory(
+        data -> new javafx.beans.property.SimpleStringProperty(data.getValue().endpoint()));
+    choices.getColumns().addAll(selected, tunnelName, endpoint);
+    choices.setItems(filtered);
+    Button save = new Button("Guardar");
+    Button cancel = new Button("Cancelar");
+    save.setOnAction(event -> saveGroupEditor(existing, name, rows));
+    cancel.setOnAction(event -> showGroups());
+    VBox editor =
+        new VBox(
+            10,
+            formGrid("Nombre", name, "Buscar túneles", search),
+            choices,
+            new HBox(8, save, cancel));
+    VBox.setVgrow(choices, Priority.ALWAYS);
+    contentContainer.getChildren().add(editor);
+  }
+
+  private void saveGroupEditor(TunnelGroupRecord existing, TextField name, List<GroupChoice> rows) {
+    UUID id = existing == null ? UUID.randomUUID() : existing.id();
+    GroupEditorViewModel.Form form =
+        new GroupEditorViewModel.Form(
+            id,
+            name.getText(),
+            rows.stream()
+                .filter(row -> row.selected().get())
+                .map(row -> row.tunnel().id())
+                .collect(java.util.stream.Collectors.toSet()));
+    workers.submit(
+        () -> {
+          try {
+            groupEditor.save(form, false);
+            Platform.runLater(this::showGroups);
+          } catch (GroupConflictException conflict) {
+            Platform.runLater(() -> confirmGroupConflict(form, conflict));
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudo guardar el grupo", exception));
+          }
+        });
+  }
+
+  private void confirmGroupConflict(
+      GroupEditorViewModel.Form form, GroupConflictException conflict) {
+    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+    alert.setHeaderText("Conflicto de endpoints locales");
+    alert.setContentText(
+        conflict.getMessage() + "\nPodrán competir por el mismo puerto al iniciar.");
+    if (alert.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+    workers.submit(
+        () -> {
+          try {
+            groupEditor.save(form, true);
+            Platform.runLater(this::showGroups);
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudo guardar el grupo", exception));
+          }
+        });
   }
 
   private void showHosts() {
@@ -229,6 +463,7 @@ public final class ShellController implements AutoCloseable {
     if (selected == null) return;
     if ("hosts".equals(selected.id())) showHosts();
     if ("tunnels".equals(selected.id())) showTunnels();
+    if ("groups".equals(selected.id())) showGroups();
   }
 
   private void refreshHosts(TableView<SshHostRecord> table) {
@@ -675,6 +910,57 @@ public final class ShellController implements AutoCloseable {
 
   private static int retryLimit(TunnelRecord record) {
     return record.retryCountOverride() == null ? 5 : record.retryCountOverride();
+  }
+
+  private static String groupStateText(GroupRuntimeStatus status) {
+    return switch (status.state()) {
+      case OPEN -> "OPEN " + status.open() + "/" + status.members();
+      case STARTING ->
+          "STARTING O=" + status.open() + " C=" + status.connecting() + " Q=" + status.queued();
+      case PARTIAL -> "PARTIAL O=" + status.open() + " E=" + status.errors();
+      case ERROR -> "ERROR " + status.errors() + "/" + status.members();
+      case CLOSED -> "CLOSED";
+    };
+  }
+
+  private static final class GroupRow {
+    private final TunnelGroupRecord group;
+    private final GroupRuntimeStatus status;
+
+    private GroupRow(TunnelGroupRecord group, GroupRuntimeStatus status) {
+      this.group = group;
+      this.status = status;
+    }
+
+    private TunnelGroupRecord group() {
+      return group;
+    }
+
+    private GroupRuntimeStatus status() {
+      return status;
+    }
+  }
+
+  private static final class GroupChoice {
+    private final TunnelRecord tunnel;
+    private final BooleanProperty selected = new SimpleBooleanProperty();
+
+    private GroupChoice(TunnelRecord tunnel, boolean selected) {
+      this.tunnel = tunnel;
+      this.selected.set(selected);
+    }
+
+    private TunnelRecord tunnel() {
+      return tunnel;
+    }
+
+    private BooleanProperty selected() {
+      return selected;
+    }
+
+    private String endpoint() {
+      return tunnel.bindAddress() + ":" + tunnel.localPort();
+    }
   }
 
   private void showError(String header, Throwable exception) {

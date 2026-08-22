@@ -1,7 +1,14 @@
 package com.ssh.tunnelmanager.application.bootstrap;
 
+import com.ssh.tunnelmanager.application.group.DeleteTunnelGroupUseCase;
+import com.ssh.tunnelmanager.application.group.DuplicateTunnelGroupUseCase;
+import com.ssh.tunnelmanager.application.group.GroupStatusService;
+import com.ssh.tunnelmanager.application.group.SaveTunnelGroupUseCase;
+import com.ssh.tunnelmanager.application.group.StartGroupUseCase;
+import com.ssh.tunnelmanager.application.group.StopGroupUseCase;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
+import com.ssh.tunnelmanager.application.persistence.TunnelGroupRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
 import com.ssh.tunnelmanager.application.runtime.ApplicationEventPublisher;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
@@ -61,11 +68,13 @@ public final class ApplicationBootstrap {
       TunnelRepository tunnelRepository,
       SshHostRepository hostRepository,
       CredentialRepository credentialRepository,
-      com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository trustedHostKeys) {
+      com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository trustedHostKeys,
+      TunnelGroupRepository groupRepository) {
     var requestProvider =
         new PersistentTunnelRequestProvider(tunnelRepository, hostRepository, credentialRepository);
-    var runtime =
-        new TunnelRuntimeManager(engine, requestProvider, new ApplicationEventPublisher(), 8);
+    var events = new ApplicationEventPublisher();
+    var runtime = new TunnelRuntimeManager(engine, requestProvider, events, 8);
+    var saveGroup = new SaveTunnelGroupUseCase(groupRepository, tunnelRepository);
     return new ApplicationComponents(
         new SaveSshHostUseCase(hostRepository, credentialRepository),
         new DeleteSshHostUseCase(hostRepository, tunnelRepository),
@@ -81,7 +90,14 @@ public final class ApplicationBootstrap {
         hostRepository,
         tunnelRepository,
         credentialRepository,
-        trustedHostKeys);
+        trustedHostKeys,
+        groupRepository,
+        saveGroup,
+        new DeleteTunnelGroupUseCase(groupRepository),
+        new DuplicateTunnelGroupUseCase(groupRepository),
+        new StartGroupUseCase(groupRepository, runtime, events),
+        new StopGroupUseCase(groupRepository, runtime),
+        new GroupStatusService(groupRepository, runtime));
   }
 
   public static ApplicationBootstrap production(
@@ -92,11 +108,15 @@ public final class ApplicationBootstrap {
     JdbcCredentialRepository credentials = new JdbcCredentialRepository(database);
     JdbcSshHostRepository hosts = new JdbcSshHostRepository(database);
     JdbcTunnelRepository tunnels = new JdbcTunnelRepository(database);
+    com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTunnelGroupRepository groups =
+        new com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTunnelGroupRepository(
+            database);
     JdbcTrustedHostKeyRepository trustedKeys = new JdbcTrustedHostKeyRepository(database);
     SshTunnelEngine engine = new MinaSshTunnelEngine(trustedKeys, approvals);
     ApplicationBootstrap bootstrap = new ApplicationBootstrap(info);
     bootstrap.components =
-        bootstrap.createComponents(database, engine, tunnels, hosts, credentials, trustedKeys);
+        bootstrap.createComponents(
+            database, engine, tunnels, hosts, credentials, trustedKeys, groups);
     return bootstrap;
   }
 

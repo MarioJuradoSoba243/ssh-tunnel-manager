@@ -1,8 +1,15 @@
 package com.ssh.tunnelmanager.application.bootstrap;
 
+import com.ssh.tunnelmanager.application.group.DeleteTunnelGroupUseCase;
+import com.ssh.tunnelmanager.application.group.DuplicateTunnelGroupUseCase;
+import com.ssh.tunnelmanager.application.group.GroupStatusService;
+import com.ssh.tunnelmanager.application.group.SaveTunnelGroupUseCase;
+import com.ssh.tunnelmanager.application.group.StartGroupUseCase;
+import com.ssh.tunnelmanager.application.group.StopGroupUseCase;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
 import com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository;
+import com.ssh.tunnelmanager.application.persistence.TunnelGroupRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
 import com.ssh.tunnelmanager.application.ssh.SshTunnelEngine;
@@ -31,4 +38,11 @@ public record ApplicationComponents(
     SshHostRepository hostRepository,
     TunnelRepository tunnelRepository,
     CredentialRepository credentialRepository,
-    TrustedHostKeyRepository trustedHostKeys) {}
+    TrustedHostKeyRepository trustedHostKeys,
+    TunnelGroupRepository groupRepository,
+    SaveTunnelGroupUseCase saveGroup,
+    DeleteTunnelGroupUseCase deleteGroup,
+    DuplicateTunnelGroupUseCase duplicateGroup,
+    StartGroupUseCase startGroup,
+    StopGroupUseCase stopGroup,
+    GroupStatusService groupStatus) {}
