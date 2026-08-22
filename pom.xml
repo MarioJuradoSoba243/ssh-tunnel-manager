@@ -197,7 +197,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>${javafx-maven-plugin.version}</version>
                 <configuration>
-                    <mainClass>com.ssh.tunnelmanager.ui.SshTunnelManagerApplication</mainClass>
+                    <mainClass>com.ssh.tunnelmanager.ui.ApplicationLauncher</mainClass>
                 </configuration>
             </plugin>
         </plugins>
