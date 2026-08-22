@@ -2,6 +2,7 @@ package com.ssh.tunnelmanager.application.bootstrap;
 
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
 import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
+import com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
 import com.ssh.tunnelmanager.application.ssh.SshTunnelEngine;
@@ -29,4 +30,5 @@ public record ApplicationComponents(
     SshTunnelEngine sshEngine,
     SshHostRepository hostRepository,
     TunnelRepository tunnelRepository,
-    CredentialRepository credentialRepository) {}
+    CredentialRepository credentialRepository,
+    TrustedHostKeyRepository trustedHostKeys) {}

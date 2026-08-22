@@ -16,6 +16,8 @@ public final class TunnelListViewModel {
   private final StopTunnelUseCase stop;
   private final RetryTunnelUseCase retry;
   private final TestTunnelConnectionUseCase test;
+  private final DeleteTunnelUseCase delete;
+  private final DuplicateTunnelUseCase duplicate;
 
   public TunnelListViewModel(
       TunnelRepository tunnels,
@@ -23,13 +25,17 @@ public final class TunnelListViewModel {
       StartTunnelUseCase start,
       StopTunnelUseCase stop,
       RetryTunnelUseCase retry,
-      TestTunnelConnectionUseCase test) {
+      TestTunnelConnectionUseCase test,
+      DeleteTunnelUseCase delete,
+      DuplicateTunnelUseCase duplicate) {
     this.tunnels = tunnels;
     this.runtime = runtime;
     this.start = start;
     this.stop = stop;
     this.retry = retry;
     this.test = test;
+    this.delete = delete;
+    this.duplicate = duplicate;
   }
 
   public List<TunnelRecord> tunnels() {
@@ -54,6 +60,14 @@ public final class TunnelListViewModel {
 
   public ConnectionTestResult test(UUID tunnelId) {
     return test.execute(tunnelId);
+  }
+
+  public void delete(UUID tunnelId) {
+    delete.execute(tunnelId);
+  }
+
+  public TunnelRecord duplicate(UUID tunnelId, String name) {
+    return duplicate.execute(tunnelId, name);
   }
 
   public void subscribe(java.util.function.Consumer<TunnelEvent> listener) {

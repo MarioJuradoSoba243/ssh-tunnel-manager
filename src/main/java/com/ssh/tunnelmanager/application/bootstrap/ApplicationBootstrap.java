@@ -60,7 +60,8 @@ public final class ApplicationBootstrap {
       SshTunnelEngine engine,
       TunnelRepository tunnelRepository,
       SshHostRepository hostRepository,
-      CredentialRepository credentialRepository) {
+      CredentialRepository credentialRepository,
+      com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository trustedHostKeys) {
     var requestProvider =
         new PersistentTunnelRequestProvider(tunnelRepository, hostRepository, credentialRepository);
     var runtime =
@@ -69,7 +70,7 @@ public final class ApplicationBootstrap {
         new SaveSshHostUseCase(hostRepository, credentialRepository),
         new DeleteSshHostUseCase(hostRepository, tunnelRepository),
         new SaveTunnelUseCase(tunnelRepository),
-        new DeleteTunnelUseCase(tunnelRepository),
+        new DeleteTunnelUseCase(tunnelRepository, runtime),
         new DuplicateTunnelUseCase(tunnelRepository),
         new StartTunnelUseCase(runtime),
         new StopTunnelUseCase(runtime),
@@ -79,7 +80,8 @@ public final class ApplicationBootstrap {
         engine,
         hostRepository,
         tunnelRepository,
-        credentialRepository);
+        credentialRepository,
+        trustedHostKeys);
   }
 
   public static ApplicationBootstrap production(
@@ -94,7 +96,7 @@ public final class ApplicationBootstrap {
     SshTunnelEngine engine = new MinaSshTunnelEngine(trustedKeys, approvals);
     ApplicationBootstrap bootstrap = new ApplicationBootstrap(info);
     bootstrap.components =
-        bootstrap.createComponents(database, engine, tunnels, hosts, credentials);
+        bootstrap.createComponents(database, engine, tunnels, hosts, credentials, trustedKeys);
     return bootstrap;
   }
 

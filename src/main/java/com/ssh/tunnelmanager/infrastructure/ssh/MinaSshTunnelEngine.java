@@ -278,8 +278,18 @@ public final class MinaSshTunnelEngine implements SshTunnelEngine {
       var existing = trustedKeys.findByHost(hop.hostname(), hop.sshPort());
       if (existing.isPresent()) {
         TrustedHostKeyRecord trusted = existing.get();
-        return trusted.fingerprintSha256().equals(fingerprint)
-            && trusted.publicKey().equals(publicKey);
+        if (trusted.fingerprintSha256().equals(fingerprint)
+            && trusted.publicKey().equals(publicKey)) return true;
+        approvals.approve(
+            new HostKeyApprovalRequest(
+                hop.hostname(),
+                hop.sshPort(),
+                algorithm,
+                publicKey,
+                fingerprint,
+                hop.position(),
+                trusted.fingerprintSha256()));
+        return false;
       }
       HostKeyApprovalRequest request =
           new HostKeyApprovalRequest(

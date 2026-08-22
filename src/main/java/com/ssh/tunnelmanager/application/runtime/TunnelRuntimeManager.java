@@ -212,7 +212,7 @@ public final class TunnelRuntimeManager implements AutoCloseable {
       slot.events.add("Desconexión; reconexión " + attempt + "/" + slot.retryLimit);
       publishState(slot);
       events.publish(new TunnelEvent.TunnelReconnectStarted(slot.tunnelId, attempt, Instant.now()));
-      submitAttempt(slot, true);
+      submitAfterBackoff(slot, generation, attempt);
     }
   }
 

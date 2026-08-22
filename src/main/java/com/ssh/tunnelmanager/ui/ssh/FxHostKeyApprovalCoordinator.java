@@ -32,6 +32,24 @@ public final class FxHostKeyApprovalCoordinator implements HostKeyApprovalCoordi
   }
 
   private static boolean show(HostKeyApprovalRequest request) {
+    if (request.previousFingerprintSha256() != null) {
+      Alert changed = new Alert(Alert.AlertType.ERROR);
+      changed.setTitle("Fingerprint SSH cambiada");
+      changed.setHeaderText("Conexión bloqueada por cambio de host key");
+      changed.setContentText(
+          request.hostname()
+              + ":"
+              + request.sshPort()
+              + " ("
+              + request.routePosition()
+              + ")\nFingerprint anterior: "
+              + request.previousFingerprintSha256()
+              + "\nFingerprint nueva: "
+              + request.fingerprintSha256()
+              + "\n\nElimina la confianza desde Hosts SSH solo si el cambio es esperado.");
+      changed.showAndWait();
+      return false;
+    }
     Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
     alert.setTitle("Aprobar fingerprint SSH");
     alert.setHeaderText("Host SSH desconocido");

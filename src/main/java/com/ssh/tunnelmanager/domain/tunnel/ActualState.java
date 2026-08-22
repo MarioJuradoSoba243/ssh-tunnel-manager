@@ -7,5 +7,9 @@ public enum ActualState {
   OPEN,
   RECONNECTING,
   STOPPING,
-  ERROR
+  ERROR;
+
+  public boolean isActive() {
+    return this == QUEUED || this == CONNECTING || this == OPEN || this == RECONNECTING;
+  }
 }

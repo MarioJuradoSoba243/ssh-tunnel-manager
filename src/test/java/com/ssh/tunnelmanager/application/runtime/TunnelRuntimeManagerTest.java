@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -75,6 +76,76 @@ class TunnelRuntimeManagerTest {
 
     assertThat(manager.runtime(tunnelId).actualState()).isEqualTo(ActualState.CLOSED);
     assertThat(engine.openCount()).isEqualTo(1);
+  }
+
+  @Test
+  void connectionLossUsesConfiguredBackoffBeforeRebuildingRoute() throws Exception {
+    FakeEngine engine = new FakeEngine();
+    List<Long> sleeps = new CopyOnWriteArrayList<>();
+    manager =
+        new TunnelRuntimeManager(
+            engine, ignored -> request(), new ApplicationEventPublisher(), 1, 1, sleeps::add);
+    UUID tunnelId = UUID.randomUUID();
+
+    manager.start(tunnelId);
+    awaitState(tunnelId, ActualState.OPEN);
+    engine.current().simulateClose();
+    awaitState(tunnelId, ActualState.OPEN);
+
+    assertThat(sleeps).containsExactly(2_000L);
+    assertThat(engine.openCount()).isEqualTo(2);
+  }
+
+  @Test
+  void retryExhaustionLeavesErrorAndManualRetryStartsNewGeneration() throws Exception {
+    FailingEngine engine = new FailingEngine(2);
+    manager = newManager(engine, ignored -> request());
+    UUID tunnelId = UUID.randomUUID();
+
+    manager.start(tunnelId);
+    awaitState(tunnelId, ActualState.ERROR);
+    assertThat(engine.openCount()).isEqualTo(2);
+    long failedGeneration = manager.runtime(tunnelId).executionGeneration();
+
+    manager.retry(tunnelId);
+    awaitState(tunnelId, ActualState.OPEN);
+    assertThat(manager.runtime(tunnelId).retryAttempt()).isZero();
+    assertThat(manager.runtime(tunnelId).executionGeneration()).isGreaterThan(failedGeneration);
+  }
+
+  @Test
+  void stopWhileQueuedRemovesTheTunnelWithoutOpeningIt() throws Exception {
+    BlockingEngine engine = new BlockingEngine();
+    manager = newManager(engine, ignored -> request());
+    UUID first = UUID.randomUUID();
+    UUID queued = UUID.randomUUID();
+
+    manager.start(first);
+    engine.awaitEntered();
+    awaitState(first, ActualState.CONNECTING);
+    manager.start(queued);
+    awaitState(queued, ActualState.QUEUED);
+    manager.stop(queued);
+    assertThat(manager.runtime(queued).actualState()).isEqualTo(ActualState.CLOSED);
+    engine.release();
+    awaitState(first, ActualState.OPEN);
+    assertThat(engine.openCount()).isEqualTo(1);
+  }
+
+  @Test
+  void stopWhileConnectingCancelsTheBlockedAttempt() throws Exception {
+    BlockingEngine engine = new BlockingEngine();
+    manager = newManager(engine, ignored -> request());
+    UUID tunnelId = UUID.randomUUID();
+
+    manager.start(tunnelId);
+    engine.awaitEntered();
+    awaitState(tunnelId, ActualState.CONNECTING);
+    manager.stop(tunnelId);
+    assertThat(manager.runtime(tunnelId).actualState()).isEqualTo(ActualState.CLOSED);
+    engine.release();
+    Thread.sleep(50);
+    assertThat(manager.runtime(tunnelId).actualState()).isEqualTo(ActualState.CLOSED);
   }
 
   private TunnelRuntimeManager newManager(SshTunnelEngine engine, TunnelRequestProvider provider) {
@@ -167,6 +238,79 @@ class TunnelRuntimeManagerTest {
     void simulateClose() {
       open = false;
       listeners.forEach(Runnable::run);
+    }
+  }
+
+  private static final class FailingEngine implements SshTunnelEngine {
+    private final AtomicInteger failuresRemaining;
+    private final AtomicInteger opens = new AtomicInteger();
+    private final FakeEngine delegate = new FakeEngine();
+
+    private FailingEngine(int failures) {
+      failuresRemaining = new AtomicInteger(failures);
+    }
+
+    @Override
+    public TunnelHandle openTunnel(TunnelConnectionRequest request) {
+      opens.incrementAndGet();
+      if (failuresRemaining.getAndDecrement() > 0)
+        throw new IllegalStateException("synthetic connection failure");
+      return delegate.openTunnel(request);
+    }
+
+    @Override
+    public ConnectionTestResult testConnection(TunnelConnectionRequest request) {
+      return ConnectionTestResult.success();
+    }
+
+    @Override
+    public void closeTunnel(TunnelHandle handle) {
+      handle.close();
+    }
+
+    int openCount() {
+      return opens.get();
+    }
+  }
+
+  private static final class BlockingEngine implements SshTunnelEngine {
+    private final CountDownLatch entered = new CountDownLatch(1);
+    private final CountDownLatch release = new CountDownLatch(1);
+    private final AtomicInteger opens = new AtomicInteger();
+
+    @Override
+    public TunnelHandle openTunnel(TunnelConnectionRequest request) {
+      opens.incrementAndGet();
+      entered.countDown();
+      try {
+        release.await();
+      } catch (InterruptedException exception) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException("connection cancelled", exception);
+      }
+      return new FakeHandle();
+    }
+
+    @Override
+    public ConnectionTestResult testConnection(TunnelConnectionRequest request) {
+      return ConnectionTestResult.success();
+    }
+
+    @Override
+    public void closeTunnel(TunnelHandle handle) {
+      handle.close();
+    }
+
+    void awaitEntered() throws InterruptedException {
+      assertThat(entered.await(3, TimeUnit.SECONDS)).isTrue();
+    }
+
+    void release() {
+      release.countDown();
+    }
+
+    int openCount() {
+      return opens.get();
     }
   }
 }
