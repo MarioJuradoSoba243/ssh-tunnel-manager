@@ -284,11 +284,11 @@
 - [ ] 9.8 Verificar cierre normal con múltiples túneles y ausencia de recursos SSH vivos después de salir.
 - [ ] 9.9 Verificar ejecución como usuario Windows estándar sin requerir administrador para uso habitual.
 - [ ] 9.10 Verificar instalación limpia del `.exe`.
-- [ ] 9.11 Verificar ejecución del paquete portable desde un directorio nuevo.
+- [x] 9.11 Verificar ejecución del paquete portable desde un directorio nuevo.
 - [x] 9.12 Verificar que el equipo de prueba no necesita un JRE/JDK externo.
 - [x] 9.13 Verificar versión de aplicación, schema DB y export format como números independientes.
 - [ ] 9.14 Revisar logs a nivel TRACE para confirmar ausencia de passwords.
-- [ ] 9.15 Revisar paquetes de diagnóstico para confirmar ausencia de passwords.
+- [x] 9.15 Revisar paquetes de diagnóstico para confirmar ausencia de passwords.
 - [x] 9.16 Revisar todos los textos visibles para asegurar UI en español.
 - [ ] 9.17 Revisar que los recursos/textos están estructurados para futura localización al inglés.
 - [x] 9.18 Revisar accesibilidad básica de teclado y comunicación de estados sin dependencia exclusiva del color.
