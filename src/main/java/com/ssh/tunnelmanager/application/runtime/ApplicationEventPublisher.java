@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 public final class ApplicationEventPublisher {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationEventPublisher.class);
   private final List<Consumer<TunnelEvent>> listeners = new CopyOnWriteArrayList<>();
+  private final List<Consumer<GroupEvent>> groupListeners = new CopyOnWriteArrayList<>();
 
   public void subscribe(Consumer<TunnelEvent> listener) {
     listeners.add(listener);
@@ -21,6 +22,23 @@ public final class ApplicationEventPublisher {
       } catch (RuntimeException exception) {
         LOGGER.warn(
             "Listener de evento falló eventType={}", event.getClass().getSimpleName(), exception);
+      }
+    }
+  }
+
+  public void subscribeGroup(Consumer<GroupEvent> listener) {
+    groupListeners.add(listener);
+  }
+
+  public void publishGroup(GroupEvent event) {
+    for (Consumer<GroupEvent> listener : groupListeners) {
+      try {
+        listener.accept(event);
+      } catch (RuntimeException exception) {
+        LOGGER.warn(
+            "Listener de evento de grupo falló eventType={}",
+            event.getClass().getSimpleName(),
+            exception);
       }
     }
   }
