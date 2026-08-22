@@ -52,10 +52,10 @@
 - [x] 2.18 Probar cierre/cancelación limpia durante conexión y con forwarding activo. PASS en fixture MINA in-process.
 - [x] 2.19 Probar destino TCP inaccesible para la operación `Probar conexión`. PASS: el forwarding termina sin datos.
 - [x] 2.20 Documentar resultados, limitaciones y APIs relevantes del spike en `docs/technical/mina-ssh-spike.md`.
-- [ ] 2.21 GATE: si todos los requisitos críticos son viables, aceptar MINA y fijar su versión para producción.
+- [x] 2.21 GATE: si todos los requisitos críticos son viables, aceptar MINA y fijar su versión para producción. PASS: in-process 14/14 y Docker Compose 5/5 con Apache MINA SSHD 2.18.0.
 - [ ] 2.22 GATE: si MINA falla materialmente, detener la implementación SSH y reportar qué decisión de `design.md` debe reabrirse.
 - [x] 2.23 Convertir los escenarios reutilizables del spike en el integration test permanente `MinaSshSpikeIT`.
-- [x] 2.24 Ejecutar los SSH integration tests disponibles y `.\mvnw.cmd verify`: 14/14 escenarios in-process y build completo pasan; falta ejecutar la topología Docker Compose.
+- [x] 2.24 Ejecutar los SSH integration tests disponibles y `.\mvnw.cmd verify`: 14/14 escenarios in-process y 5/5 escenarios Docker Compose pasan; warnings NIO2 de teardown documentados.
 
 ## 3. Persistencia SQLite y servicios base
 

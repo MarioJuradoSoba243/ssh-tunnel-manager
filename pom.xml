@@ -88,12 +88,11 @@
             <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- Candidate SSH engine kept test-scoped until the Phase 2 gate is accepted. -->
+        <!-- Apache MINA SSHD was accepted by the mandatory Phase 2 spike. -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
             <version>${mina.sshd.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.xerial</groupId>

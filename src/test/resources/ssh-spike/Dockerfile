@@ -2,8 +2,7 @@ FROM alpine:3.22
 
 RUN apk add --no-cache openssh-server netcat-openbsd \
     && mkdir -p /run/sshd \
-    && ssh-keygen -A \
-    && printf '%s\\n' \
+    && printf '%s\n' \
        'PasswordAuthentication yes' \
        'PermitRootLogin no' \
        'AllowTcpForwarding yes' \

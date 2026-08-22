@@ -1,22 +1,26 @@
 # Apache MINA SSHD — resultado del spike obligatorio
 
-Fecha de ejecución: 2026-08-17
+Fecha de ejecución: 2026-08-22
 Versión evaluada: Apache MINA SSHD 2.18.0
 Test permanente: `MinaSshSpikeIT`
 
 ## Alcance y topología
 
-Se añadió `sshd-core` únicamente con scope de test mientras el gate siga abierto.
+Se evaluó `sshd-core` 2.18.0 y, tras superar el gate, queda disponible como
+dependencia de runtime para la implementación productiva.
 La topología reproducible definida para una ejecución con Docker Compose contiene
 `jump-1`, `jump-2`, `ssh-final` y `tcp-target`, con usuarios y passwords
 independientes para cada host SSH.
 
-Docker no está instalado en el entorno de esta ejecución. Por ello, los escenarios
-se ejecutaron contra un fixture controlado en la misma JVM: tres servidores MINA
-independientes, cada uno con su propio puerto, credencial y host key, más un
-servidor TCP local para el destino. El fixture conserva la ruta real de sesiones y
-forwardings MINA, pero no sustituye una prueba de interoperabilidad con
-`sshd-server` en contenedores.
+La topología se ejecutó con Docker Desktop mediante la ruta explícita del CLI
+`%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin\docker.exe`.
+Publica `jump-1` en 2221, `jump-2` en 2222 y `ssh-final` en 2223; `tcp-target`
+solo está disponible dentro de la red Docker en 5432. Los servidores SSH son
+OpenSSH sobre Alpine y tienen credenciales y host keys independientes.
+
+Además de la topología Docker, se conserva el fixture controlado en la misma JVM
+para los escenarios de timeout de banner SSH y para la cobertura detallada de
+forwarding y cierre.
 
 ## Resultados
 
@@ -40,6 +44,16 @@ Los 14 tests del spike pasaron mediante Failsafe.
 | Cancelación, cierre y forwarding activo | PASS | `supportsCancellationAndCleanShutdownWithForwardingActive` |
 | Destino TCP inalcanzable | PASS: el forwarding no entrega datos | `reportsAnUnreachableForwardingDestination` |
 
+La prueba Docker permanente `MinaSshDockerSpikeIT` ejecutó 5/5 escenarios:
+
+| Escenario Docker | Resultado |
+| --- | --- |
+| Conexión directa, un jump y dos jumps con credenciales independientes | PASS |
+| Local Port Forwarding hacia `tcp-target:5432`, distinto de `ssh-final` | PASS |
+| Rechazo de host key desconocida, aprobación explícita y bloqueo tras cambio | PASS |
+| Pérdida del contenedor SSH final y cierre limpio | PASS |
+| Destino inalcanzable y cancelación del forwarding | PASS |
+
 ## Limitaciones y decisiones para la implementación posterior
 
 1. El `ConnectFuture` de MINA puede completarse cuando se establece el socket
@@ -50,23 +64,24 @@ Los 14 tests del spike pasaron mediante Failsafe.
 2. La verificación de host key se ejercitó con un `ServerKeyVerifier` controlado
    por el test. Todavía no existe persistencia ni UI de aprobaciones; eso pertenece
    a la implementación posterior al gate.
-3. La ejecución con Docker Compose queda pendiente porque `docker` y
-   `docker-compose` no están disponibles en este entorno. No se ha validado aún
-   la interoperabilidad con OpenSSH ni el aislamiento de red entre contenedores.
-4. En Windows, el fixture puede emitir warnings asíncronos de NIO2 al cerrar
+3. En Windows, MINA puede emitir warnings asíncronos de NIO2 al cerrar
    servidores con conexiones activas (`Executor has been shut down` o errores de
    socket). Los cierres explícitos devuelven correctamente y Failsafe no registra
-   fallos, pero esta condición debe revalidarse con la topología Docker antes de
-   considerar cerrado el requisito de shutdown limpio.
-5. No se ha implementado `SshTunnelEngine` productivo ni se ha seleccionado MINA
-   como dependencia runtime; esta sesión no avanza a la Fase 3.
+   fallos. En Docker también aparecen errores de socket Windows al cancelar un
+   cliente local; corresponden a la carrera normal de cierre del forwarding y no
+   dejan contenedores fallidos ni tests rojos.
+4. El watcher de identidades por defecto puede advertir sobre una clave
+   `~/.ssh/id_ed25519` local con un tipo no soportado. Los escenarios usan
+   exclusivamente password authentication y no dependen de esa clave.
+5. El `SshTunnelEngine` productivo se implementará en la Fase 4; el gate solo
+   acepta la viabilidad técnica del motor y no adelanta esa implementación.
 
 ## Gate
 
-El fixture MINA in-process no ha mostrado un fallo material: todos los escenarios
-críticos pasan. El gate formal queda **pendiente de cierre**, no rechazado, hasta
-ejecutar la misma evidencia con la topología Docker Compose aprobada. No se
-selecciona ninguna librería alternativa.
+MINA queda **ACEPTADO**. Todos los escenarios críticos pasan en el fixture
+in-process (14/14) y la topología Docker Compose interoperable con OpenSSH (5/5).
+No se selecciona ninguna librería alternativa. La versión fijada para producción
+es 2.18.0.
 
 ## APIs relevantes
 

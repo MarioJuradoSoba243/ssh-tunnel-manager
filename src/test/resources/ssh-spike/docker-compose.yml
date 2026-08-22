@@ -7,6 +7,8 @@ services:
     environment:
       SSH_USER: jump1
       SSH_PASSWORD: jump1-password
+    ports:
+      - "127.0.0.1:2221:22"
     networks:
       - ssh-route
 
@@ -18,6 +20,8 @@ services:
     environment:
       SSH_USER: jump2
       SSH_PASSWORD: jump2-password
+    ports:
+      - "127.0.0.1:2222:22"
     networks:
       - ssh-route
 
@@ -29,6 +33,8 @@ services:
     environment:
       SSH_USER: final
       SSH_PASSWORD: final-password
+    ports:
+      - "127.0.0.1:2223:22"
     networks:
       - ssh-route
 
@@ -37,7 +43,7 @@ services:
     command:
       - /bin/sh
       - -c
-      - while true; do printf 'ssh-spike-target\\n' | nc -l -p 5432 -q 1; done
+      - while true; do printf 'ssh-spike-target\n' | nc -l -p 5432; done
     networks:
       - ssh-route
 
