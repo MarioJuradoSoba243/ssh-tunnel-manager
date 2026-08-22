@@ -24,7 +24,7 @@
 - [x] 1.13 Crear una prueba smoke de arranque JavaFX.
 - [x] 1.14 Crear GitHub Actions para compile, format check, unit tests, SQLite-independent tests y ArchUnit.
 - [x] 1.15 Crear un primer job Windows de `jpackage` que produzca una application image mínima; la image corregida se ejecutó y permaneció activa durante la validación.
-- [ ] 1.16 Generar un instalador Windows mínimo mediante `jpackage` y verificar que no requiere un JRE/JDK externo. Pendiente de revalidar el instalador después de corregir el launcher.
+- [x] 1.16 Generar un instalador Windows mínimo mediante `jpackage` y verificar que no requiere un JRE/JDK externo. Verificado con JDK 25, WiX y modo per-user.
 - [x] 1.17 Generar un ZIP portable mínimo a partir de la application image; el ZIP corregido se extrajo y su ejecutable permaneció activo durante la validación.
 - [x] 1.18 Documentar en `README.md` los comandos de build/test/package y ejecución IntelliJ realmente disponibles tras el bootstrap.
 - [x] 1.19 Ejecutar Spotless y `.\mvnw.cmd verify`.
@@ -33,7 +33,7 @@
 ## 2. Spike obligatorio del motor SSH
 
 - [x] 2.1 Añadir Apache MINA SSHD 2.18.0 con scope de test, aislada en infraestructura/spike mientras el gate siga abierto.
-- [x] 2.2 Crear la topología Docker Compose de integración con `jump-1`, `jump-2`, `ssh-final` y un servicio TCP destino. La ejecución queda pendiente porque Docker no está instalado en el entorno.
+- [x] 2.2 Crear y ejecutar la topología Docker Compose de integración con `jump-1`, `jump-2`, `ssh-final` y un servicio TCP destino. Verificada con Docker Desktop y el CLI explícito fuera del sandbox.
 - [x] 2.3 Configurar usuarios y passwords independientes para `jump-1`, `jump-2` y `ssh-final`.
 - [x] 2.4 Probar conexión SSH directa mediante usuario/password. PASS en fixture MINA in-process.
 - [x] 2.5 Probar una ruta con un jump y credenciales distintas entre jump y host final. PASS en fixture MINA in-process.
@@ -124,27 +124,27 @@
 - [x] 4.31 Implementar mostrar/cambiar password en el editor de Host.
 - [x] 4.32 Implementar lista de Hosts SSH.
 - [x] 4.33 Implementar lista de Túneles con `TableView`.
-- [ ] 4.34 Implementar editor amplio de túnel dentro del shell.
+- [x] 4.34 Implementar editor amplio de túnel dentro del shell.
 - [x] 4.35 Implementar selección independiente de Jump 1, Jump 2 y SSH final.
 - [x] 4.36 Implementar campos y validaciones de Local Port Forwarding.
-- [ ] 4.37 Implementar ajustes avanzados de timeout, keep-alive, retry count y opciones SSH libres.
+- [x] 4.37 Implementar ajustes avanzados de timeout, keep-alive, retry count y opciones SSH libres.
 - [x] 4.38 Impedir opciones SSH libres que contradigan campos estructurados.
 - [x] 4.39 Implementar `Probar conexión` y su feedback.
 - [x] 4.40 Implementar diálogo serializado de aprobación de fingerprint.
-- [ ] 4.41 Implementar flujo explícito para fingerprint cambiada.
+- [x] 4.41 Implementar flujo explícito para fingerprint cambiada.
 - [x] 4.42 Implementar acciones individuales Iniciar, Detener y Reintentar.
 - [x] 4.43 Implementar visualización de estado, intento de reconexión y tiempo activo desde `startedAt`.
-- [ ] 4.44 Implementar historial de eventos de la sesión actual por túnel.
-- [ ] 4.45 Implementar edición de túnel activo con `Guardar y reiniciar`.
+- [x] 4.44 Implementar historial de eventos de la sesión actual por túnel.
+- [x] 4.45 Implementar edición de túnel activo con `Guardar y reiniciar`.
 - [x] 4.46 Implementar error explícito de puerto local ocupado sin selección automática de otro puerto.
 - [x] 4.47 Implementar mensajes de error amigables y `Ver detalles`/`Copiar error`.
-- [ ] 4.48 Añadir tests unitarios exhaustivos del state machine, idempotencia, backoff y generaciones.
+- [x] 4.48 Añadir tests unitarios exhaustivos del state machine, idempotencia, backoff y generaciones.
 - [x] 4.49 Añadir integration tests productivos de MINA para conexión directa, 1 jump y 2 jumps.
 - [x] 4.50 Añadir tests del flujo de fingerprints desconocidas y cambiadas.
-- [ ] 4.51 Añadir tests del editor/ViewModels de Host y Túnel donde sean estables.
+- [x] 4.51 Añadir tests del editor/ViewModels de Host y Túnel donde sean estables.
 - [x] 4.52 Documentar en la guía de usuario: hosts, passwords, túneles, jumps, fingerprints, probar conexión, start/stop, reconexión y errores.
-- [ ] 4.53 Generar artefactos instalable y portable de `0.1.0`.
-- [ ] 4.54 Ejecutar SSH integration tests, `.\mvnw.cmd verify` y smoke test del package `0.1.0`.
+- [x] 4.53 Generar artefactos instalable y portable de `0.1.0`. Verificados con jpackage JDK 25, WiX, instalación per-user, arranque instalado y smoke test portable.
+- [x] 4.54 Ejecutar SSH integration tests, `.\mvnw.cmd verify` y smoke test del package `0.1.0`. Verificados Failsafe 30/30 con Docker 30/30 (7 skips property-gated en verify), Spotless, ArchUnit, portable image/ZIP e instalación per-user.
 
 ## 5. Milestone 0.2.0 — grupos y operación masiva
 

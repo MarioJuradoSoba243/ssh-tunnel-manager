@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Fases 1, 2 y 3 completadas; vertical slice 0.1.0 en implementación.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación ya dispone de la infraestructura base para hosts, túneles individuales y lifecycle; el estado exacto del milestone se mantiene en `tasks.md`.
+**Fases 1, 2 y 3 completadas; milestone 0.1.0 en validación final.** Apache MINA SSHD 2.18.0 superó el gate técnico Docker/in-process. La aplicación dispone del vertical slice de hosts y túneles individuales; el estado exacto de packaging y las tareas pendientes se mantiene en `tasks.md`.
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -132,7 +132,17 @@ El launcher de desarrollo es:
 com.ssh.tunnelmanager.ui.ApplicationLauncher
 ```
 
-Desde PowerShell, situado en la raíz del repositorio:
+Desde PowerShell, situado en la raíz del repositorio. El toolchain soportado es el JDK 25 permanente:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+java -version
+```
+
+La comprobación debe mostrar Java 25 para `java`, `javac`, `jpackage` y `.\mvnw.cmd -version`.
+
+Para ejecutar desde Maven:
 
 ```powershell
 .\mvnw.cmd javafx:run
@@ -158,6 +168,14 @@ También puedes crear una configuración **Maven** con:
 Command line: javafx:run
 ```
 
+Los integration tests SSH requieren Docker Desktop. Cuando `docker` no esté en
+el PATH del proceso, utiliza el CLI explícito:
+
+```powershell
+$docker = "$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin\docker.exe"
+& $docker compose -f src/test/resources/ssh-spike/docker-compose.yml up --build -d
+```
+
 No uses `SshTunnelManagerApplication` como Main class de jpackage o de la
 configuración **Application** de IntelliJ: esa clase es el `Application` JavaFX;
 `ApplicationLauncher` es el punto de entrada plano común a Maven, IntelliJ y el
@@ -169,9 +187,11 @@ Para generar la application image, el instalador `.exe` y el ZIP portable en Win
 .\scripts\package-windows.ps1 -Type all
 ```
 
-El script requiere `jpackage` de un JDK 25. Para el instalador Windows también se
-requieren las herramientas WiX en `PATH`; la application image y el ZIP portable
-se generan en `dist/` aunque el instalador no esté disponible.
+El script requiere `jpackage` del JDK 25 permanente anterior. Para el instalador
+Windows también se requieren `candle.exe` y `light.exe` de WiX Toolset en `PATH`.
+El instalador se genera como instalación por usuario (`--win-per-user-install`),
+por lo que no requiere privilegios de administrador para el uso habitual. La
+application image, el instalador y el ZIP portable se generan en `dist/`.
 
 El ejecutable del portable está en la raíz de la carpeta extraída:
 

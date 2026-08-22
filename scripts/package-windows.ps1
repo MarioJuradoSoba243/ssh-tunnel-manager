@@ -69,6 +69,7 @@ if ($Type -in @('installer', 'all')) {
         --main-class com.ssh.tunnelmanager.ui.ApplicationLauncher `
         --dest $distDirectory `
         --win-dir-chooser `
+        --win-per-user-install `
         --win-menu `
         --win-shortcut `
         --java-options '-Dfile.encoding=UTF-8'
