@@ -173,38 +173,38 @@
 
 ## 6. Milestone 0.3.0 — Hub, organización y gestión de gran volumen
 
-- [ ] 6.1 Implementar modelos y casos de uso de Project, Environment y Tag.
-- [ ] 6.2 Implementar pantalla única `Organización` para proyectos, entornos y tags.
-- [ ] 6.3 Implementar asignación opcional de proyecto y entorno en túneles.
-- [ ] 6.4 Implementar proyecto y entorno en grupos sin imponer reglas de pertenencia.
-- [ ] 6.5 Implementar tags N:M en túneles y grupos.
-- [ ] 6.6 Implementar eliminación confirmada de proyecto/entorno dejando referencias a NULL.
-- [ ] 6.7 Implementar favoritos en túneles y grupos.
-- [ ] 6.8 Implementar recientes automáticos con límite fijo de 8 elementos.
-- [ ] 6.9 Actualizar recientes solo por acciones explícitas de start y no por reconexiones.
-- [ ] 6.10 Implementar Hub con acciones rápidas/favoritos.
-- [ ] 6.11 Implementar sección de túneles activos en el Hub.
-- [ ] 6.12 Implementar sección de recientes en el Hub.
-- [ ] 6.13 Implementar resumen global de abiertos/reconectando/error con navegación a listas filtradas.
-- [ ] 6.14 Implementar búsqueda global sobre túneles, grupos y hosts.
-- [ ] 6.15 Implementar acciones directas desde resultados de búsqueda.
-- [ ] 6.16 Implementar `Ctrl+K` como atajo inicial de búsqueda global.
-- [ ] 6.17 Implementar carga de tablas mediante `ObservableList` + `FilteredList` + `SortedList`.
-- [ ] 6.18 Implementar filtros por proyecto, entorno, tags, grupo y estado.
-- [ ] 6.19 Implementar ordenación de columnas relevante para túneles, grupos y hosts.
-- [ ] 6.20 Implementar selección múltiple de túneles.
-- [ ] 6.21 Implementar bulk start/stop desde selección.
-- [ ] 6.22 Implementar bulk add/remove group.
-- [ ] 6.23 Implementar bulk favorite/unfavorite.
-- [ ] 6.24 Implementar bulk assignment de proyecto/entorno.
-- [ ] 6.25 Implementar acción global `Detener todos` con confirmación.
-- [ ] 6.26 Implementar estado vacío de primera ejecución orientado a crear un Host SSH y explicar host → túnel → grupo.
-- [ ] 6.27 Añadir tests de búsquedas/filtros sobre al menos 100 túneles.
-- [ ] 6.28 Añadir tests de recientes, favoritos y clasificación.
-- [ ] 6.29 Añadir tests de ViewModels del Hub.
-- [ ] 6.30 Documentar Hub, búsqueda, filtros, favoritos, recientes, organización y bulk actions.
-- [ ] 6.31 Generar y verificar instalador/portable `0.3.0`.
-- [ ] 6.32 Ejecutar `.\mvnw.cmd verify`.
+- [x] 6.1 Implementar modelos y casos de uso de Project, Environment y Tag.
+- [x] 6.2 Implementar pantalla única `Organización` para proyectos, entornos y tags.
+- [x] 6.3 Implementar asignación opcional de proyecto y entorno en túneles.
+- [x] 6.4 Implementar proyecto y entorno en grupos sin imponer reglas de pertenencia.
+- [x] 6.5 Implementar tags N:M en túneles y grupos.
+- [x] 6.6 Implementar eliminación confirmada de proyecto/entorno dejando referencias a NULL.
+- [x] 6.7 Implementar favoritos en túneles y grupos.
+- [x] 6.8 Implementar recientes automáticos con límite fijo de 8 elementos.
+- [x] 6.9 Actualizar recientes solo por acciones explícitas de start y no por reconexiones.
+- [x] 6.10 Implementar Hub con acciones rápidas/favoritos.
+- [x] 6.11 Implementar sección de túneles activos en el Hub.
+- [x] 6.12 Implementar sección de recientes en el Hub.
+- [x] 6.13 Implementar resumen global de abiertos/reconectando/error con navegación a listas filtradas.
+- [x] 6.14 Implementar búsqueda global sobre túneles, grupos y hosts.
+- [x] 6.15 Implementar acciones directas desde resultados de búsqueda.
+- [x] 6.16 Implementar `Ctrl+K` como atajo inicial de búsqueda global.
+- [x] 6.17 Implementar carga de tablas mediante `ObservableList` + `FilteredList` + `SortedList`.
+- [x] 6.18 Implementar filtros por proyecto, entorno, tags, grupo y estado.
+- [x] 6.19 Implementar ordenación de columnas relevante para túneles, grupos y hosts.
+- [x] 6.20 Implementar selección múltiple de túneles.
+- [x] 6.21 Implementar bulk start/stop desde selección.
+- [x] 6.22 Implementar bulk add/remove group.
+- [x] 6.23 Implementar bulk favorite/unfavorite.
+- [x] 6.24 Implementar bulk assignment de proyecto/entorno.
+- [x] 6.25 Implementar acción global `Detener todos` con confirmación.
+- [x] 6.26 Implementar estado vacío de primera ejecución orientado a crear un Host SSH y explicar host → túnel → grupo.
+- [x] 6.27 Añadir tests de búsquedas/filtros sobre al menos 100 túneles.
+- [x] 6.28 Añadir tests de recientes, favoritos y clasificación.
+- [x] 6.29 Añadir tests de ViewModels del Hub.
+- [x] 6.30 Documentar Hub, búsqueda, filtros, favoritos, recientes, organización y bulk actions.
+- [x] 6.31 Generar y verificar instalador/portable `0.3.0`.
+- [x] 6.32 Ejecutar `.\mvnw.cmd verify`.
 
 ## 7. Milestone 0.4.0 — exportación, importación, backups y portabilidad
 
