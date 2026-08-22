@@ -274,28 +274,28 @@
 
 ## 9. Cierre de v1 / 1.0.0
 
-- [ ] 9.1 Revisar cada requirement y scenario de todas las delta specs contra la implementación.
-- [ ] 9.2 Añadir o corregir tests para cualquier escenario especificado que no tenga verificación suficiente.
-- [ ] 9.3 Ejecutar la topología completa de integration tests SSH.
-- [ ] 9.4 Ejecutar todos los tests SQLite y migraciones desde todas las versiones de schema existentes.
-- [ ] 9.5 Verificar export/import completo y restore de backup en un dataset representativo de 100+ túneles.
-- [ ] 9.6 Verificar funcionamiento con aproximadamente 20 túneles activos y operaciones concurrentes.
-- [ ] 9.7 Verificar que búsqueda/filtros siguen siendo responsivos con 100–500 configuraciones.
+- [x] 9.1 Revisar cada requirement y scenario de todas las delta specs contra la implementación.
+- [x] 9.2 Añadir o corregir tests para cualquier escenario especificado que no tenga verificación suficiente.
+- [x] 9.3 Ejecutar la topología completa de integration tests SSH.
+- [x] 9.4 Ejecutar todos los tests SQLite y migraciones desde todas las versiones de schema existentes.
+- [x] 9.5 Verificar export/import completo y restore de backup en un dataset representativo de 100+ túneles.
+- [x] 9.6 Verificar funcionamiento con aproximadamente 20 túneles activos y operaciones concurrentes.
+- [x] 9.7 Verificar que búsqueda/filtros siguen siendo responsivos con 100–500 configuraciones.
 - [ ] 9.8 Verificar cierre normal con múltiples túneles y ausencia de recursos SSH vivos después de salir.
 - [ ] 9.9 Verificar ejecución como usuario Windows estándar sin requerir administrador para uso habitual.
 - [ ] 9.10 Verificar instalación limpia del `.exe`.
 - [ ] 9.11 Verificar ejecución del paquete portable desde un directorio nuevo.
-- [ ] 9.12 Verificar que el equipo de prueba no necesita un JRE/JDK externo.
-- [ ] 9.13 Verificar versión de aplicación, schema DB y export format como números independientes.
+- [x] 9.12 Verificar que el equipo de prueba no necesita un JRE/JDK externo.
+- [x] 9.13 Verificar versión de aplicación, schema DB y export format como números independientes.
 - [ ] 9.14 Revisar logs a nivel TRACE para confirmar ausencia de passwords.
 - [ ] 9.15 Revisar paquetes de diagnóstico para confirmar ausencia de passwords.
-- [ ] 9.16 Revisar todos los textos visibles para asegurar UI en español.
+- [x] 9.16 Revisar todos los textos visibles para asegurar UI en español.
 - [ ] 9.17 Revisar que los recursos/textos están estructurados para futura localización al inglés.
-- [ ] 9.18 Revisar accesibilidad básica de teclado y comunicación de estados sin dependencia exclusiva del color.
-- [ ] 9.19 Revisar y completar `docs/user-guide/es/` para todas las funcionalidades de v1.
-- [ ] 9.20 Actualizar `README.md` con instrucciones finales de build, tests, packaging y estructura del proyecto.
-- [ ] 9.21 Ejecutar Spotless y `.\mvnw.cmd verify` en limpio.
+- [x] 9.18 Revisar accesibilidad básica de teclado y comunicación de estados sin dependencia exclusiva del color.
+- [x] 9.19 Revisar y completar `docs/user-guide/es/` para todas las funcionalidades de v1.
+- [x] 9.20 Actualizar `README.md` con instrucciones finales de build, tests, packaging y estructura del proyecto.
+- [x] 9.21 Ejecutar Spotless y `.\mvnw.cmd verify` en limpio.
 - [ ] 9.22 Ejecutar el job Windows de release y generar el instalador `1.0.0`.
-- [ ] 9.23 Generar el ZIP portable `1.0.0`.
+- [x] 9.23 Generar el ZIP portable `1.0.0`.
 - [ ] 9.24 Realizar smoke test de ambos artefactos de distribución.
-- [ ] 9.25 Confirmar que todos los checkboxes de `tasks.md` reflejan el estado real antes de considerar el cambio listo para archivar.
+- [x] 9.25 Confirmar que todos los checkboxes de `tasks.md` reflejan el estado real antes de considerar el cambio listo para archivar.

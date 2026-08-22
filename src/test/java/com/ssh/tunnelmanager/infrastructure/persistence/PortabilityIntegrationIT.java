@@ -258,6 +258,23 @@ class PortabilityIntegrationIT {
   }
 
   @Test
+  void restoresARepresentativeHundredTunnelBackup(@TempDir Path directory) {
+    DatabaseFactory database = database(directory.resolve("db.sqlite"));
+    JdbcConfigurationStore store = new JdbcConfigurationStore(database);
+    ConfigurationSnapshot expected = dataset(100);
+    store.replace(expected);
+    BackupService backups = new BackupService(database, directory.resolve("backups"));
+    Path snapshot = backups.createBackup("hundred-tunnels");
+
+    store.replace(dataset(1));
+    backups.beforeRestore();
+    backups.restore(snapshot);
+
+    assertThat(store.snapshot().tunnels()).hasSize(100);
+    assertSemanticallyEqual(store.snapshot(), expected);
+  }
+
+  @Test
   void detectsCorruptionListsOnlyValidBackupsAndRestoresWithoutOverwritingSilently(
       @TempDir Path directory) throws Exception {
     DatabaseFactory database = database(directory.resolve("db.sqlite"));
