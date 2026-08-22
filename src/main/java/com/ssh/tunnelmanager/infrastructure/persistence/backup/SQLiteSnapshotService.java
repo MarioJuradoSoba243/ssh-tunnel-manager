@@ -43,6 +43,15 @@ public final class SQLiteSnapshotService {
             if (!result.next() || !"ok".equalsIgnoreCase(result.getString(1))) {
               throw new PersistenceException("El snapshot SQLite no supera integrity_check");
             }
+            try (var schema =
+                connection
+                    .createStatement()
+                    .executeQuery("SELECT MAX(version) FROM schema_version")) {
+              if (!schema.next() || schema.getInt(1) < 1) {
+                throw new PersistenceException(
+                    "El snapshot SQLite no contiene un schema reconocido");
+              }
+            }
             return null;
           }
         });

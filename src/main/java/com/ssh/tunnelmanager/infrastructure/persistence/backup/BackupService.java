@@ -1,5 +1,6 @@
 package com.ssh.tunnelmanager.infrastructure.persistence.backup;
 
+import com.ssh.tunnelmanager.application.portability.BackupPort;
 import com.ssh.tunnelmanager.infrastructure.persistence.DatabaseFactory;
 import com.ssh.tunnelmanager.infrastructure.persistence.PersistenceException;
 import java.io.IOException;
@@ -13,7 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 
-public final class BackupService {
+public final class BackupService implements BackupPort {
   private static final String DIRTY_KEY = "backup.dirty";
   private static final String LAST_BACKUP_KEY = "backup.last-created-at";
   private static final Duration PERIOD = Duration.ofMinutes(30);
@@ -64,6 +65,7 @@ public final class BackupService {
     }
   }
 
+  @Override
   public Path backupIfDue() {
     if (!isDirty()) {
       return null;
@@ -82,8 +84,14 @@ public final class BackupService {
     return createBackup("before-" + operation);
   }
 
+  @Override
   public Path beforeImport() {
     return beforeRiskyOperation("import");
+  }
+
+  @Override
+  public Path beforeRestore() {
+    return beforeRiskyOperation("restore");
   }
 
   public Path beforeBulkDeletion() {
@@ -100,6 +108,7 @@ public final class BackupService {
               path ->
                   path.getFileName().toString().startsWith("backup-")
                       && path.toString().endsWith(".db"))
+          .filter(BackupService::isValidBackup)
           .sorted(Comparator.comparing(Path::toString).reversed())
           .toList();
     } catch (IOException exception) {
@@ -120,26 +129,50 @@ public final class BackupService {
 
   public void restore(Path backup) {
     SQLiteSnapshotService.validate(backup);
-    beforeRiskyOperation("restore");
+    restoreValidated(backup, false);
+    putMetadata(DIRTY_KEY, "false");
+  }
+
+  /** Restores without attempting to snapshot an unreadable current database. */
+  public void restoreAfterCorruption(Path backup) {
+    SQLiteSnapshotService.validate(backup);
+    restoreValidated(backup, true);
+  }
+
+  private void restoreValidated(Path backup, boolean preservePrevious) {
     Path temporary = null;
+    Path previous = null;
+    Path databasePath = database.databasePath();
     try {
-      Files.createDirectories(database.databasePath().toAbsolutePath().normalize().getParent());
-      temporary = Files.createTempFile(database.databasePath().getParent(), "restore-", ".db");
+      Files.createDirectories(databasePath.toAbsolutePath().normalize().getParent());
+      temporary = Files.createTempFile(databasePath.getParent(), "restore-", ".db");
       Files.copy(backup, temporary, StandardCopyOption.REPLACE_EXISTING);
       SQLiteSnapshotService.validate(temporary);
-      deleteSidecars(database.databasePath());
-      try {
-        Files.move(
-            temporary,
-            database.databasePath(),
-            StandardCopyOption.ATOMIC_MOVE,
-            StandardCopyOption.REPLACE_EXISTING);
-        temporary = null;
-      } catch (java.nio.file.AtomicMoveNotSupportedException exception) {
-        Files.move(temporary, database.databasePath(), StandardCopyOption.REPLACE_EXISTING);
-        temporary = null;
+      previous = Files.createTempFile(databasePath.getParent(), "restore-previous-", ".db");
+      Files.deleteIfExists(previous);
+      if (Files.exists(databasePath)) {
+        moveReplacing(databasePath, previous);
       }
-      putMetadata(DIRTY_KEY, "false");
+      deleteSidecars(databasePath);
+      try {
+        moveReplacing(temporary, databasePath);
+        temporary = null;
+        if (preservePrevious && previous != null) {
+          Path preserved =
+              databasePath.resolveSibling(
+                  databasePath.getFileName() + ".corrupt-" + System.currentTimeMillis() + ".db");
+          moveReplacing(previous, preserved);
+        } else {
+          Files.deleteIfExists(previous);
+        }
+        previous = null;
+      } catch (IOException exception) {
+        if (previous != null && Files.exists(previous)) {
+          moveReplacing(previous, databasePath);
+          previous = null;
+        }
+        throw exception;
+      }
     } catch (IOException exception) {
       throw new PersistenceException("No se pudo restaurar el backup SQLite", exception);
     } finally {
@@ -150,6 +183,31 @@ public final class BackupService {
           // La restauración ya ha fallado; conservar el error original es más útil.
         }
       }
+      if (previous != null) {
+        try {
+          Files.deleteIfExists(previous);
+        } catch (IOException ignored) {
+          // No se puede deshacer el restore después de conservar el estado anterior.
+        }
+      }
+    }
+  }
+
+  private static boolean isValidBackup(Path path) {
+    try {
+      SQLiteSnapshotService.validate(path);
+      return true;
+    } catch (PersistenceException exception) {
+      return false;
+    }
+  }
+
+  private static void moveReplacing(Path source, Path destination) throws IOException {
+    try {
+      Files.move(
+          source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    } catch (java.nio.file.AtomicMoveNotSupportedException exception) {
+      Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
     }
   }
 

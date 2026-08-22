@@ -14,6 +14,7 @@ import com.ssh.tunnelmanager.application.organization.SaveEnvironmentUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveProjectUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveTagUseCase;
 import com.ssh.tunnelmanager.application.persistence.BulkWorkspaceRepository;
+import com.ssh.tunnelmanager.application.persistence.ConfigurationStore;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
 import com.ssh.tunnelmanager.application.persistence.EnvironmentRepository;
 import com.ssh.tunnelmanager.application.persistence.ProjectRepository;
@@ -22,6 +23,12 @@ import com.ssh.tunnelmanager.application.persistence.SshHostRepository;
 import com.ssh.tunnelmanager.application.persistence.TagRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelGroupRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
+import com.ssh.tunnelmanager.application.portability.BackupPort;
+import com.ssh.tunnelmanager.application.portability.ConfigurationJsonCodec;
+import com.ssh.tunnelmanager.application.portability.ExportConfigurationUseCase;
+import com.ssh.tunnelmanager.application.portability.ImportConfigurationUseCase;
+import com.ssh.tunnelmanager.application.portability.RestoreBackupUseCase;
+import com.ssh.tunnelmanager.application.portability.RuntimeControl;
 import com.ssh.tunnelmanager.application.recent.RecentItemService;
 import com.ssh.tunnelmanager.application.runtime.ApplicationEventPublisher;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
@@ -42,9 +49,12 @@ import com.ssh.tunnelmanager.application.tunnel.TestTunnelConnectionUseCase;
 import com.ssh.tunnelmanager.infrastructure.persistence.DataDirectories;
 import com.ssh.tunnelmanager.infrastructure.persistence.DataDirectoryResolver;
 import com.ssh.tunnelmanager.infrastructure.persistence.DatabaseFactory;
+import com.ssh.tunnelmanager.infrastructure.persistence.PersistenceException;
 import com.ssh.tunnelmanager.infrastructure.persistence.StorageMode;
+import com.ssh.tunnelmanager.infrastructure.persistence.backup.BackupService;
 import com.ssh.tunnelmanager.infrastructure.persistence.migration.DatabaseMigrator;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcBulkWorkspaceRepository;
+import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcConfigurationStore;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcCredentialRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcEnvironmentRepository;
 import com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcProjectRepository;
@@ -88,15 +98,39 @@ public final class ApplicationBootstrap {
       CredentialRepository credentialRepository,
       com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository trustedHostKeys,
       TunnelGroupRepository groupRepository) {
+    return createComponents(
+        database,
+        engine,
+        tunnelRepository,
+        hostRepository,
+        credentialRepository,
+        trustedHostKeys,
+        groupRepository,
+        noOpBackups());
+  }
+
+  private ApplicationComponents createComponents(
+      DatabaseFactory database,
+      SshTunnelEngine engine,
+      TunnelRepository tunnelRepository,
+      SshHostRepository hostRepository,
+      CredentialRepository credentialRepository,
+      com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository trustedHostKeys,
+      TunnelGroupRepository groupRepository,
+      BackupPort backups) {
     var requestProvider =
         new PersistentTunnelRequestProvider(tunnelRepository, hostRepository, credentialRepository);
     var events = new ApplicationEventPublisher();
     var runtime = new TunnelRuntimeManager(engine, requestProvider, events, 8);
-    ProjectRepository projects = new JdbcProjectRepository(database);
-    EnvironmentRepository environments = new JdbcEnvironmentRepository(database);
-    TagRepository tags = new JdbcTagRepository(database);
-    RecentItemRepository recentItems = new JdbcRecentItemRepository(database);
-    BulkWorkspaceRepository bulkWorkspace = new JdbcBulkWorkspaceRepository(database);
+    ProjectRepository projects = new JdbcProjectRepository(database, backups::markDirty);
+    EnvironmentRepository environments =
+        new JdbcEnvironmentRepository(database, backups::markDirty);
+    TagRepository tags = new JdbcTagRepository(database, backups::markDirty);
+    RecentItemRepository recentItems = new JdbcRecentItemRepository(database, backups::markDirty);
+    BulkWorkspaceRepository bulkWorkspace =
+        new JdbcBulkWorkspaceRepository(database, backups::markDirty);
+    ConfigurationStore configurationStore =
+        new JdbcConfigurationStore(database, backups::markDirty);
     var recents = new RecentItemService(recentItems);
     var usage = new ClassificationUsageService(tunnelRepository, groupRepository);
     var saveGroup = new SaveTunnelGroupUseCase(groupRepository, tunnelRepository);
@@ -133,26 +167,36 @@ public final class ApplicationBootstrap {
         new SaveEnvironmentUseCase(environments),
         new DeleteEnvironmentUseCase(environments, usage),
         new SaveTagUseCase(tags),
-        new DeleteTagUseCase(tags, usage));
+        new DeleteTagUseCase(tags, usage),
+        configurationStore,
+        new ExportConfigurationUseCase(
+            configurationStore, new ConfigurationJsonCodec(), applicationInfo.version()),
+        new ImportConfigurationUseCase(
+            configurationStore, new ConfigurationJsonCodec(), backups, runtimeControl(runtime)),
+        new RestoreBackupUseCase(backups, runtimeControl(runtime)),
+        backups);
   }
 
   public static ApplicationBootstrap production(
       ApplicationInfo info, DataDirectories directories, HostKeyApprovalCoordinator approvals) {
     DataDirectoryResolver.createDirectories(directories);
     DatabaseFactory database = new DatabaseFactory(directories.database());
-    new DatabaseMigrator(database).migrate();
-    JdbcCredentialRepository credentials = new JdbcCredentialRepository(database);
-    JdbcSshHostRepository hosts = new JdbcSshHostRepository(database);
-    JdbcTunnelRepository tunnels = new JdbcTunnelRepository(database);
+    BackupService backups = new BackupService(database, directories.backups());
+    new DatabaseMigrator(database, backups).migrate();
+    JdbcCredentialRepository credentials =
+        new JdbcCredentialRepository(database, backups::markDirty);
+    JdbcSshHostRepository hosts = new JdbcSshHostRepository(database, backups::markDirty);
+    JdbcTunnelRepository tunnels = new JdbcTunnelRepository(database, backups::markDirty);
     com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTunnelGroupRepository groups =
         new com.ssh.tunnelmanager.infrastructure.persistence.repository.JdbcTunnelGroupRepository(
-            database);
-    JdbcTrustedHostKeyRepository trustedKeys = new JdbcTrustedHostKeyRepository(database);
+            database, backups::markDirty);
+    JdbcTrustedHostKeyRepository trustedKeys =
+        new JdbcTrustedHostKeyRepository(database, backups::markDirty);
     SshTunnelEngine engine = new MinaSshTunnelEngine(trustedKeys, approvals);
     ApplicationBootstrap bootstrap = new ApplicationBootstrap(info);
     bootstrap.components =
         bootstrap.createComponents(
-            database, engine, tunnels, hosts, credentials, trustedKeys, groups);
+            database, engine, tunnels, hosts, credentials, trustedKeys, groups, backups);
     return bootstrap;
   }
 
@@ -167,7 +211,19 @@ public final class ApplicationBootstrap {
             : StorageMode.INSTALLED;
     DataDirectories directories =
         DataDirectoryResolver.resolve(mode, applicationDirectory, Path.of(localAppData));
-    return production(info, directories, approvals);
+    try {
+      return production(info, directories, approvals);
+    } catch (PersistenceException exception) {
+      ApplicationBootstrap recovery = new ApplicationBootstrap(info);
+      recovery.recovery =
+          new RecoveryContext(
+              directories,
+              approvals,
+              exception,
+              new BackupService(
+                  new DatabaseFactory(directories.database()), directories.backups()));
+      return recovery;
+    }
   }
 
   private static Path applicationDirectory() {
@@ -182,6 +238,7 @@ public final class ApplicationBootstrap {
   }
 
   private ApplicationComponents components;
+  private RecoveryContext recovery;
 
   public ApplicationComponents components() {
     if (components == null)
@@ -192,4 +249,91 @@ public final class ApplicationBootstrap {
   public boolean isProductionConfigured() {
     return components != null;
   }
+
+  public boolean isRecoveryMode() {
+    return recovery != null;
+  }
+
+  public String recoveryMessage() {
+    if (recovery == null) return null;
+    return recovery.failure.getMessage();
+  }
+
+  public List<Path> recoveryBackups() {
+    if (recovery == null) return List.of();
+    return recovery.backups.listBackups();
+  }
+
+  public void restoreRecovery(Path backup) {
+    if (recovery == null) throw new IllegalStateException("La aplicación no está en recuperación");
+    recovery.backups.restoreAfterCorruption(backup);
+    ApplicationBootstrap restored =
+        production(applicationInfo, recovery.directories, recovery.approvals);
+    components = restored.components;
+    recovery = null;
+  }
+
+  private static RuntimeControl runtimeControl(TunnelRuntimeManager runtime) {
+    return new RuntimeControl() {
+      @Override
+      public boolean hasActiveTunnels() {
+        return runtime.runtimes().values().stream()
+            .anyMatch(
+                value ->
+                    value.actualState() != com.ssh.tunnelmanager.domain.tunnel.ActualState.CLOSED);
+      }
+
+      @Override
+      public void stopAllAndAwait() {
+        runtime.stopAll();
+        long deadline = System.nanoTime() + java.time.Duration.ofSeconds(10).toNanos();
+        while (hasActiveTunnels() && System.nanoTime() < deadline) {
+          try {
+            Thread.sleep(25);
+          } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+        }
+      }
+    };
+  }
+
+  private static BackupPort noOpBackups() {
+    return new BackupPort() {
+      @Override
+      public void markDirty() {}
+
+      @Override
+      public Path backupIfDue() {
+        return null;
+      }
+
+      @Override
+      public Path beforeImport() {
+        return null;
+      }
+
+      @Override
+      public Path beforeRestore() {
+        return null;
+      }
+
+      @Override
+      public List<Path> listBackups() {
+        return List.of();
+      }
+
+      @Override
+      public void restore(Path backup) {
+        throw new UnsupportedOperationException("Backups no configurados en este bootstrap");
+      }
+    };
+  }
+
+  private record RecoveryContext(
+      DataDirectories directories,
+      HostKeyApprovalCoordinator approvals,
+      PersistenceException failure,
+      BackupService backups) {}
 }

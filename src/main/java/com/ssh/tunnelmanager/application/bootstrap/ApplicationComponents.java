@@ -13,6 +13,7 @@ import com.ssh.tunnelmanager.application.organization.SaveEnvironmentUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveProjectUseCase;
 import com.ssh.tunnelmanager.application.organization.SaveTagUseCase;
 import com.ssh.tunnelmanager.application.persistence.BulkWorkspaceRepository;
+import com.ssh.tunnelmanager.application.persistence.ConfigurationStore;
 import com.ssh.tunnelmanager.application.persistence.CredentialRepository;
 import com.ssh.tunnelmanager.application.persistence.EnvironmentRepository;
 import com.ssh.tunnelmanager.application.persistence.ProjectRepository;
@@ -22,6 +23,10 @@ import com.ssh.tunnelmanager.application.persistence.TagRepository;
 import com.ssh.tunnelmanager.application.persistence.TrustedHostKeyRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelGroupRepository;
 import com.ssh.tunnelmanager.application.persistence.TunnelRepository;
+import com.ssh.tunnelmanager.application.portability.BackupPort;
+import com.ssh.tunnelmanager.application.portability.ExportConfigurationUseCase;
+import com.ssh.tunnelmanager.application.portability.ImportConfigurationUseCase;
+import com.ssh.tunnelmanager.application.portability.RestoreBackupUseCase;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntimeManager;
 import com.ssh.tunnelmanager.application.ssh.SshTunnelEngine;
 import com.ssh.tunnelmanager.application.tunnel.DeleteSshHostUseCase;
@@ -67,4 +72,9 @@ public record ApplicationComponents(
     SaveEnvironmentUseCase saveEnvironment,
     DeleteEnvironmentUseCase deleteEnvironment,
     SaveTagUseCase saveTag,
-    DeleteTagUseCase deleteTag) {}
+    DeleteTagUseCase deleteTag,
+    ConfigurationStore configurationStore,
+    ExportConfigurationUseCase exportConfiguration,
+    ImportConfigurationUseCase importConfiguration,
+    RestoreBackupUseCase restoreBackup,
+    BackupPort backups) {}

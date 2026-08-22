@@ -13,6 +13,10 @@ import com.ssh.tunnelmanager.application.persistence.model.SshHostRecord;
 import com.ssh.tunnelmanager.application.persistence.model.TagRecord;
 import com.ssh.tunnelmanager.application.persistence.model.TunnelGroupRecord;
 import com.ssh.tunnelmanager.application.persistence.model.TunnelRecord;
+import com.ssh.tunnelmanager.application.portability.ConflictAction;
+import com.ssh.tunnelmanager.application.portability.ConflictKey;
+import com.ssh.tunnelmanager.application.portability.ImportConflict;
+import com.ssh.tunnelmanager.application.portability.ImportSession;
 import com.ssh.tunnelmanager.application.runtime.TunnelRuntime;
 import com.ssh.tunnelmanager.application.shell.NavigationItem;
 import com.ssh.tunnelmanager.application.shell.ShellViewModel;
@@ -25,6 +29,7 @@ import com.ssh.tunnelmanager.domain.credential.Credential;
 import com.ssh.tunnelmanager.domain.host.SshHost;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -212,6 +217,7 @@ public final class ShellController implements AutoCloseable {
       case "groups" -> showGroups();
       case "home" -> showHome();
       case "organization" -> showOrganization();
+      case "settings" -> showSettings();
       default ->
           sectionDescription.setText("Esta sección estará disponible en una fase posterior.");
     }
@@ -421,6 +427,279 @@ public final class ShellController implements AutoCloseable {
         .map(TabPane.class::cast)
         .findFirst()
         .ifPresent(pane -> pane.getTabs().forEach(tab -> tab.setClosable(false)));
+  }
+
+  private void showSettings() {
+    sectionDescription.setText(
+        "Exporta, importa y recupera la configuración sin incluir estados runtime.");
+    if (components == null) return;
+    Button export = new Button("Exportar configuración JSON");
+    Button importButton = new Button("Importar configuración JSON");
+    Button backups = new Button("Ver backups y restaurar");
+    export.setOnAction(event -> exportConfiguration());
+    importButton.setOnAction(event -> importConfiguration());
+    backups.setOnAction(event -> restoreBackup());
+    contentContainer
+        .getChildren()
+        .add(
+            new VBox(
+                12,
+                new Label(
+                    "La exportación completa contiene contraseñas recuperables. "
+                        + "Guárdala solo en un lugar seguro."),
+                export,
+                importButton,
+                backups));
+  }
+
+  private void exportConfiguration() {
+    javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+    chooser.setTitle("Exportar configuración");
+    chooser.setInitialFileName("ssh-tunnel-manager-export.json");
+    chooser
+        .getExtensionFilters()
+        .add(new javafx.stage.FileChooser.ExtensionFilter("JSON", "*.json"));
+    java.io.File selected = chooser.showSaveDialog(contentContainer.getScene().getWindow());
+    if (selected == null) return;
+    Alert warning =
+        new Alert(
+            Alert.AlertType.WARNING,
+            "El archivo contendrá contraseñas SSH recuperables. ¿Quieres continuar?");
+    warning.setHeaderText("Exportación completa");
+    ButtonType continueButton = new ButtonType("Continuar", ButtonBar.ButtonData.OK_DONE);
+    warning.getButtonTypes().setAll(continueButton, ButtonType.CANCEL);
+    if (warning.showAndWait().orElse(ButtonType.CANCEL) != continueButton) return;
+    workers.submit(
+        () -> {
+          try {
+            components.exportConfiguration().execute(selected.toPath());
+            Platform.runLater(() -> showInfo("Exportación completada", selected.getPath()));
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudo exportar", exception));
+          }
+        });
+  }
+
+  private void importConfiguration() {
+    javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+    chooser.setTitle("Importar configuración");
+    chooser
+        .getExtensionFilters()
+        .add(new javafx.stage.FileChooser.ExtensionFilter("JSON", "*.json"));
+    java.io.File selected = chooser.showOpenDialog(contentContainer.getScene().getWindow());
+    if (selected == null) return;
+    workers.submit(
+        () -> {
+          try {
+            ImportSession session = components.importConfiguration().analyze(selected.toPath());
+            Platform.runLater(() -> showImportPreview(session));
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudo analizar la importación", exception));
+          }
+        });
+  }
+
+  private void showImportPreview(ImportSession session) {
+    var preview = session.preview();
+    if (preview.conflictCount() == 0) {
+      Alert confirmation =
+          new Alert(
+              Alert.AlertType.CONFIRMATION,
+              "Nuevos: "
+                  + preview.newEntities()
+                  + " · Sin cambios: "
+                  + preview.unchangedEntities()
+                  + ". ¿Continuar?");
+      confirmation.setHeaderText("Vista previa de importación");
+      if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+      commitImport(session, Map.of(), Map.of());
+      return;
+    }
+    javafx.scene.control.Dialog<Map<ConflictKey, ConflictAction>> dialog =
+        new javafx.scene.control.Dialog<>();
+    dialog.setTitle("Resolver conflictos de importación");
+    dialog.setHeaderText(
+        "Nuevos: "
+            + preview.newEntities()
+            + " · Sin cambios: "
+            + preview.unchangedEntities()
+            + " · Conflictos: "
+            + preview.conflictCount());
+    ButtonType continueButton = new ButtonType("Continuar", ButtonBar.ButtonData.OK_DONE);
+    dialog.getDialogPane().getButtonTypes().setAll(continueButton, ButtonType.CANCEL);
+    ComboBox<ConflictAction> applyAll = new ComboBox<>();
+    applyAll
+        .getItems()
+        .addAll(
+            preview.conflicts().stream().allMatch(conflict -> supportsCopy(conflict.key().type()))
+                ? List.of(ConflictAction.values())
+                : List.of(ConflictAction.KEEP_CURRENT, ConflictAction.REPLACE));
+    applyAll.setPromptText("Aplicar a todos (opcional)");
+    VBox rows = new VBox(8, new Label("Decisión global opcional"), applyAll);
+    Map<ConflictKey, ComboBox<ConflictAction>> choices = new java.util.LinkedHashMap<>();
+    for (ImportConflict conflict : preview.conflicts()) {
+      ComboBox<ConflictAction> choice = new ComboBox<>();
+      choice.getItems().addAll(actionsFor(conflict.key().type()));
+      choice.setValue(ConflictAction.KEEP_CURRENT);
+      choices.put(conflict.key(), choice);
+      rows.getChildren()
+          .add(
+              new HBox(
+                  8,
+                  new Label(
+                      conflict.key().type()
+                          + " · "
+                          + conflict.name()
+                          + "\nActual: "
+                          + conflict.currentSummary()
+                          + "\nImportado: "
+                          + conflict.importedSummary()),
+                  choice));
+    }
+    javafx.scene.control.ScrollPane scroll = new javafx.scene.control.ScrollPane(rows);
+    scroll.setFitToWidth(true);
+    scroll.setPrefViewportHeight(450);
+    dialog.getDialogPane().setContent(scroll);
+    dialog.setResultConverter(
+        button -> {
+          if (button != continueButton) return null;
+          Map<ConflictKey, ConflictAction> decisions = new java.util.LinkedHashMap<>();
+          choices.forEach((key, choice) -> decisions.put(key, choice.getValue()));
+          return decisions;
+        });
+    dialog
+        .showAndWait()
+        .ifPresent(
+            decisions -> {
+              Map<com.ssh.tunnelmanager.application.portability.ConflictType, ConflictAction> all =
+                  new java.util.EnumMap<>(
+                      com.ssh.tunnelmanager.application.portability.ConflictType.class);
+              if (applyAll.getValue() != null) {
+                preview.conflicts().stream()
+                    .map(conflict -> conflict.key().type())
+                    .distinct()
+                    .forEach(type -> all.put(type, applyAll.getValue()));
+              }
+              commitImport(session, decisions, all);
+            });
+  }
+
+  private static List<ConflictAction> actionsFor(
+      com.ssh.tunnelmanager.application.portability.ConflictType type) {
+    return supportsCopy(type)
+        ? List.of(ConflictAction.values())
+        : List.of(ConflictAction.KEEP_CURRENT, ConflictAction.REPLACE);
+  }
+
+  private static boolean supportsCopy(
+      com.ssh.tunnelmanager.application.portability.ConflictType type) {
+    return type != com.ssh.tunnelmanager.application.portability.ConflictType.TRUSTED_HOST_KEY
+        && type != com.ssh.tunnelmanager.application.portability.ConflictType.SETTING
+        && type != com.ssh.tunnelmanager.application.portability.ConflictType.KEYBOARD_SHORTCUT;
+  }
+
+  private void commitImport(
+      ImportSession session,
+      Map<ConflictKey, ConflictAction> decisions,
+      Map<com.ssh.tunnelmanager.application.portability.ConflictType, ConflictAction> applyToAll) {
+    boolean active =
+        components.runtimeManager().runtimes().values().stream()
+            .anyMatch(
+                runtime ->
+                    runtime.actualState()
+                        != com.ssh.tunnelmanager.domain.tunnel.ActualState.CLOSED);
+    boolean stopActive = false;
+    if (active) {
+      Alert confirmation =
+          new Alert(
+              Alert.AlertType.CONFIRMATION,
+              "Hay túneles activos. Puedes cancelar o detener todos y continuar.");
+      confirmation.setHeaderText("Importación con túneles activos");
+      ButtonType stop = new ButtonType("Detener todos y continuar", ButtonBar.ButtonData.OK_DONE);
+      confirmation.getButtonTypes().setAll(stop, ButtonType.CANCEL);
+      if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != stop) return;
+      stopActive = true;
+    }
+    boolean finalStopActive = stopActive;
+    workers.submit(
+        () -> {
+          try {
+            components
+                .importConfiguration()
+                .commit(session, decisions, applyToAll, finalStopActive);
+            Platform.runLater(
+                () -> showInfo("Importación completada", "La configuración fue importada."));
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudo importar", exception));
+          }
+        });
+  }
+
+  private void restoreBackup() {
+    workers.submit(
+        () -> {
+          try {
+            List<java.nio.file.Path> values = components.backups().listBackups();
+            Platform.runLater(() -> chooseBackup(values));
+          } catch (RuntimeException exception) {
+            Platform.runLater(() -> showError("No se pudieron listar los backups", exception));
+          }
+        });
+  }
+
+  private void chooseBackup(List<java.nio.file.Path> values) {
+    if (values.isEmpty()) {
+      showInfo("Backups", "No hay backups SQLite utilizables.");
+      return;
+    }
+    javafx.scene.control.ChoiceDialog<java.nio.file.Path> dialog =
+        new javafx.scene.control.ChoiceDialog<>(values.getFirst(), values);
+    dialog.setTitle("Restaurar backup");
+    dialog.setHeaderText("Selecciona un snapshot SQLite válido");
+    dialog.setContentText("Backup:");
+    dialog
+        .showAndWait()
+        .ifPresent(
+            selected -> {
+              boolean active =
+                  components.runtimeManager().runtimes().values().stream()
+                      .anyMatch(
+                          runtime ->
+                              runtime.actualState()
+                                  != com.ssh.tunnelmanager.domain.tunnel.ActualState.CLOSED);
+              boolean stopActive = false;
+              if (active) {
+                Alert activeWarning =
+                    new Alert(
+                        Alert.AlertType.CONFIRMATION,
+                        "Hay túneles activos. Puedes cancelar o detener todos y continuar.");
+                activeWarning.setHeaderText("Restauración con túneles activos");
+                ButtonType stop =
+                    new ButtonType("Detener todos y continuar", ButtonBar.ButtonData.OK_DONE);
+                activeWarning.getButtonTypes().setAll(stop, ButtonType.CANCEL);
+                if (activeWarning.showAndWait().orElse(ButtonType.CANCEL) != stop) return;
+                stopActive = true;
+              }
+              boolean finalStopActive = stopActive;
+              Alert warning =
+                  new Alert(
+                      Alert.AlertType.WARNING,
+                      "Se creará un backup de seguridad antes de restaurar. ¿Continuar?");
+              warning.setHeaderText("Restaurar configuración");
+              if (warning.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+              workers.submit(
+                  () -> {
+                    try {
+                      components.restoreBackup().execute(selected, finalStopActive);
+                      Platform.runLater(
+                          () ->
+                              showInfo(
+                                  "Restauración completada", "Los túneles permanecen cerrados."));
+                    } catch (RuntimeException exception) {
+                      Platform.runLater(() -> showError("No se pudo restaurar", exception));
+                    }
+                  });
+            });
   }
 
   private <T> VBox classificationPanel(

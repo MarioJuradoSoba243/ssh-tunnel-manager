@@ -20,11 +20,19 @@ public final class DatabaseFactory {
   }
 
   public Connection openConnection() {
+    Connection connection = null;
     try {
-      Connection connection = DriverManager.getConnection(jdbcUrl);
+      connection = DriverManager.getConnection(jdbcUrl);
       configure(connection);
       return connection;
     } catch (SQLException exception) {
+      if (connection != null) {
+        try {
+          connection.close();
+        } catch (SQLException closeException) {
+          exception.addSuppressed(closeException);
+        }
+      }
       throw new PersistenceException("No se pudo abrir la base SQLite", exception);
     }
   }

@@ -12,6 +12,10 @@ public final class JdbcBulkWorkspaceRepository extends JdbcRepositorySupport
     super(database);
   }
 
+  public JdbcBulkWorkspaceRepository(DatabaseFactory database, Runnable dirtyMarker) {
+    super(database, dirtyMarker);
+  }
+
   @Override
   public void setTunnelFavorites(Set<UUID> tunnelIds, boolean favorite) {
     updateTunnels("UPDATE tunnel SET is_favorite = ? WHERE id = ?", tunnelIds, favorite ? 1 : 0);

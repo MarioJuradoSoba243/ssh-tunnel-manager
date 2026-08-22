@@ -85,7 +85,9 @@ public final class DatabaseMigrator {
       if (migration.version() <= currentVersion) {
         continue;
       }
-      beforeMigration.run();
+      if (currentVersion > 0) {
+        beforeMigration.run();
+      }
       database.inTransaction(
           connection -> {
             executeStatements(connection, migration.sql());
