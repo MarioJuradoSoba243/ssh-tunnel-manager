@@ -22,6 +22,11 @@ if ($jpackageVersion -notmatch '^25\.') {
     throw "jpackage requiere JDK 25; se ha encontrado la versión $jpackageVersion."
 }
 
+if (Test-Path $inputDirectory) {
+    Remove-Item -LiteralPath $inputDirectory -Recurse -Force
+}
+New-Item -ItemType Directory -Path $inputDirectory | Out-Null
+
 & (Join-Path $projectRoot 'mvnw.cmd') -B -DskipTests package
 if ($LASTEXITCODE -ne 0) {
     throw 'El build Maven ha fallado.'
