@@ -23,13 +23,13 @@ directamente a `openspec/changes/create-ssh-tunnel-manager/specs/**/spec.md`.
 | Instancia única | Segunda ejecución | `SingleInstanceCoordinatorTest`, smoke portable | TEST/PKG |
 | Cierre con túneles activos | Cancelar cierre; Confirmar cierre | `SshTunnelManagerApplication`, `TunnelRuntimeManagerTest` | TEST/SRC |
 | Sin residencia tras el cierre | Cierre normal | smoke real de portable/instalador | PKG |
-| Terminación de recursos SSH | Cierre normal con procesos SSH | cierre de `TunnelHandle`, runtime y smoke real | TEST/PKG |
+| Terminación de recursos SSH | Cierre normal con procesos SSH; terminación anómala | cierre de `TunnelHandle`, runtime, smoke real y `ApplicationHardKillIT` | TEST/PKG |
 | Detección de ejecución anterior anómala | Apertura después de un crash | `ExecutionMarkerTest`, `ResumeDetectorTest` | TEST |
 
-La recuperación específica después de terminación forzada sigue registrada como
-pendiente en 8.5: la implementación usa conexiones in-process y marcador de
-ejecución, pero no existe un test de recuperación de recursos huérfanos de un
-hard-kill real.
+`ApplicationHardKillIT` lanza un proceso hijo, abre un listener TCP real, lo
+termina con `destroyForcibly`, verifica la liberación del puerto, inspecciona
+que no haya descendientes SSH externos, comprueba el marcador y verifica que el
+siguiente arranque comienza `CLOSED` sin túneles restaurados.
 
 ## Application settings — 5 requirements / 5 scenarios
 
@@ -84,7 +84,7 @@ hard-kill real.
 | Accesibilidad visual de estados | Estado de error | textos de estado en tabla y guía | SRC |
 | Escalado y tamaño inicial de ventana | Escalado al 150 % | tamaño 1024×700 automatizado | PARTIAL: 100/125/150/200 manual pendiente |
 | Uso mediante teclado | Abrir búsqueda global por teclado | `ShortcutRegistryTest`, cache sin SQLite por evento | TEST/SRC |
-| Idioma de v1 y preparación para localización | Textos de interfaz de v1 | revisión de strings visibles y guía es | PARTIAL: interfaz v1 revisada en español; no hay todavía un catálogo ResourceBundle para inglés |
+| Idioma de v1 y preparación para localización | Textos de interfaz de v1 | `UiMessages`, `messages_es.properties`, `messages_en.properties`, FXML y guía es | TEST/SRC |
 | Notificaciones operativas relevantes | Túnel agota reintentos | servicio de notificación y runtime | SRC |
 | Confirmaciones proporcionales | Detener un túnel individual; Detener todos los túneles | UI y tests de runtime | TEST/SRC |
 | Aislamiento de fallos | Un túnel falla dentro de un grupo | `GroupUseCaseTest` | TEST |
@@ -194,14 +194,11 @@ de cuatro handshakes concurrentes y cierre verificable de los 20 endpoints.
 
 Los pendientes que impiden afirmar una validación manual completa son:
 
-1. 8.5: prueba específica de recuperación de recursos huérfanos tras hard-kill.
-2. 8.20: inspección visual Windows real a 100%, 125%, 150% y 200%.
-3. 8.30: smoke UI completo de crear host, crear túnel y búsqueda global.
-4. 9.9: ejecución final como cuenta estándar real; la cuenta de esta sesión es
+1. 8.20: inspección visual Windows real a 100%, 125%, 150% y 200%.
+2. 8.30: smoke UI completo de crear host, crear túnel y búsqueda global.
+3. 9.9: ejecución final como cuenta estándar real; la cuenta de esta sesión es
    miembro de Administradores con token UAC filtrado.
-5. 9.17: la interfaz visible está en español, pero los literales siguen en
-   código y no existe todavía un catálogo ResourceBundle para inglés.
-6. 9.22: no se ejecutó el job remoto de GitHub Actions; se ejecutó el
+4. 9.22: no se ejecutó el job remoto de GitHub Actions; se ejecutó el
    equivalente local con JDK 25 y WiX instalado.
 
 Por ello esta matriz no convierte esos puntos en checks verdes de `tasks.md`.
