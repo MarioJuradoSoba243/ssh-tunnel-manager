@@ -29,6 +29,7 @@ import com.ssh.tunnelmanager.application.workspace.SearchResult;
 import com.ssh.tunnelmanager.application.workspace.WorkspaceSearchViewModel;
 import com.ssh.tunnelmanager.domain.credential.Credential;
 import com.ssh.tunnelmanager.domain.host.SshHost;
+import com.ssh.tunnelmanager.ui.i18n.UiMessages;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -182,7 +183,7 @@ public final class ShellController implements AutoCloseable {
               @Override
               protected void updateItem(NavigationItem item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.label());
+                setText(empty || item == null ? null : UiMessages.get("navigation." + item.id()));
               }
             });
     navigationList
@@ -250,7 +251,7 @@ public final class ShellController implements AutoCloseable {
     stopStatusRefresh();
     editingTunnel = false;
     editingGroup = false;
-    sectionTitle.setText(item.label());
+    sectionTitle.setText(UiMessages.get("navigation." + item.id()));
     contentContainer
         .getChildren()
         .removeIf(node -> node != sectionTitle && node != sectionDescription);
@@ -261,13 +262,12 @@ public final class ShellController implements AutoCloseable {
       case "home" -> showHome();
       case "organization" -> showOrganization();
       case "settings" -> showSettings();
-      default ->
-          sectionDescription.setText("Esta sección estará disponible en una fase posterior.");
+      default -> sectionDescription.setText(UiMessages.get("section.unavailable"));
     }
   }
 
   private void showHome() {
-    sectionDescription.setText("Favoritos, actividad reciente y estado actual de tus túneles.");
+    sectionDescription.setText(UiMessages.get("home.description.active"));
     if (hub == null) return;
     Label summary = new Label("Cargando resumen…");
     Label emptyFlow = new Label();
@@ -1613,11 +1613,16 @@ public final class ShellController implements AutoCloseable {
     visiblePassword.setManaged(false);
     GridPane grid =
         formGrid(
-            "Nombre", name,
-            "Nombre de host", hostname,
-            "Puerto SSH", port,
-            "Usuario", username,
-            "Contraseña", password);
+            "Nombre",
+            name,
+            "Nombre de host",
+            hostname,
+            "Puerto SSH",
+            port,
+            "Usuario",
+            username,
+            UiMessages.get("tunnel.editor.password"),
+            password);
     grid.add(showPassword, 1, 5);
     grid.add(visiblePassword, 1, 6);
     dialog.getDialogPane().setContent(grid);
@@ -1758,28 +1763,44 @@ public final class ShellController implements AutoCloseable {
     options.setPromptText("Una opción por línea, por ejemplo: ServerAliveCountMax=3");
     options.setPrefRowCount(7);
 
-    Tab general = new Tab("General", formGrid("Nombre", name));
+    Tab general = new Tab(UiMessages.get("tunnel.editor.tab.general"), formGrid("Nombre", name));
     Tab forwarding =
         new Tab(
-            "Reenvío de puerto local",
+            UiMessages.get("tunnel.editor.tab.forwarding"),
             formGrid(
-                "Dirección de escucha", bind,
-                "Puerto local", localPort,
-                "Host destino", destinationHost,
-                "Puerto destino", destinationPort));
+                UiMessages.get("tunnel.editor.bind"),
+                bind,
+                "Puerto local",
+                localPort,
+                "Host destino",
+                destinationHost,
+                "Puerto destino",
+                destinationPort));
     Tab route =
-        new Tab("Ruta SSH", formGrid("Salto 1", jump1, "Salto 2", jump2, "SSH final", finalHost));
+        new Tab(
+            UiMessages.get("tunnel.editor.tab.route"),
+            formGrid(
+                UiMessages.get("tunnel.editor.jump1"),
+                jump1,
+                UiMessages.get("tunnel.editor.jump2"),
+                jump2,
+                "SSH final",
+                finalHost));
     Tab advanced =
         new Tab(
-            "Opciones avanzadas",
+            UiMessages.get("tunnel.editor.tab.advanced"),
             formGrid(
-                "Mantener conexión (s)", keepAlive,
-                "Tiempo de espera por tramo (s)", timeout,
-                "Reintentos", retries,
-                "Opciones SSH", options));
+                UiMessages.get("tunnel.editor.keepalive"),
+                keepAlive,
+                UiMessages.get("tunnel.editor.timeout"),
+                timeout,
+                "Reintentos",
+                retries,
+                "Opciones SSH",
+                options));
     Tab organization =
         new Tab(
-            "Organización",
+            UiMessages.get("tunnel.editor.tab.organization"),
             formGrid(
                 "Proyecto",
                 project,

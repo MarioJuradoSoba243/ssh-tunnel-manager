@@ -15,16 +15,16 @@
             <padding>
                 <Insets bottom="20.0" left="16.0" right="16.0" top="20.0" />
             </padding>
-            <Label styleClass="application-title" text="SSH Tunnel Manager" />
-            <ListView fx:id="navigationList" accessibleText="Navegación principal" VBox.vgrow="ALWAYS" />
+            <Label styleClass="application-title" text="%app.title" />
+            <ListView fx:id="navigationList" accessibleText="%navigation.accessible" VBox.vgrow="ALWAYS" />
         </VBox>
     </left>
     <center>
         <StackPane styleClass="content-pane">
             <VBox fx:id="contentContainer" maxWidth="920.0" spacing="10.0">
-                <Label fx:id="sectionTitle" styleClass="section-title" text="Inicio" />
+                <Label fx:id="sectionTitle" styleClass="section-title" text="%navigation.home" />
                 <Label fx:id="sectionDescription" wrapText="true"
-                       text="Bienvenido al gestor de túneles SSH." />
+                       text="%home.description" />
             </VBox>
         </StackPane>
     </center>

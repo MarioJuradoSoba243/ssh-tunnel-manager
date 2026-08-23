@@ -9,6 +9,7 @@ import com.ssh.tunnelmanager.infrastructure.persistence.DataDirectoryResolver;
 import com.ssh.tunnelmanager.infrastructure.windows.ExecutionMarker;
 import com.ssh.tunnelmanager.infrastructure.windows.ResumeDetector;
 import com.ssh.tunnelmanager.infrastructure.windows.SingleInstanceCoordinator;
+import com.ssh.tunnelmanager.ui.i18n.UiMessages;
 import com.ssh.tunnelmanager.ui.shell.ShellController;
 import com.ssh.tunnelmanager.ui.ssh.FxHostKeyApprovalCoordinator;
 import com.ssh.tunnelmanager.ui.theme.ThemeManager;
@@ -101,7 +102,7 @@ public final class SshTunnelManagerApplication extends Application {
       return;
     }
     Scene scene = createScene();
-    stage.setTitle("Gestor de túneles SSH");
+    stage.setTitle(UiMessages.get("app.title"));
     stage.setMinWidth(800);
     stage.setMinHeight(560);
     stage.setScene(scene);
@@ -127,10 +128,7 @@ public final class SshTunnelManagerApplication extends Application {
     }
     LOGGER.info("Aplicación iniciada version={}", bootstrap.applicationInfo().version());
     if (previousRunAbnormal) {
-      new Alert(
-              Alert.AlertType.WARNING,
-              "La ejecución anterior terminó de forma anómala. No se han reabierto túneles automáticamente.")
-          .showAndWait();
+      new Alert(Alert.AlertType.WARNING, UiMessages.get("application.abnormal")).showAndWait();
     }
   }
 
@@ -139,13 +137,13 @@ public final class SshTunnelManagerApplication extends Application {
     javafx.scene.control.ListView<Path> backups =
         new javafx.scene.control.ListView<>(
             javafx.collections.FXCollections.observableArrayList(available));
-    backups.setPlaceholder(new javafx.scene.control.Label("No hay backups SQLite utilizables."));
+    backups.setPlaceholder(
+        new javafx.scene.control.Label(UiMessages.get("application.recovery.empty")));
     javafx.scene.control.Button restore =
-        new javafx.scene.control.Button("Restaurar backup seleccionado");
+        new javafx.scene.control.Button(UiMessages.get("application.recovery.restore"));
     javafx.scene.control.Label details =
         new javafx.scene.control.Label(
-            "La base principal no se puede abrir y no se sobrescribirá automáticamente.\n"
-                + bootstrap.recoveryMessage());
+            UiMessages.get("application.recovery.detail") + "\n" + bootstrap.recoveryMessage());
     restore.setOnAction(
         event -> {
           Path selected = backups.getSelectionModel().getSelectedItem();
@@ -159,7 +157,7 @@ public final class SshTunnelManagerApplication extends Application {
                       () -> {
                         try {
                           stage.setScene(createScene());
-                          stage.setTitle("Gestor de túneles SSH");
+                          stage.setTitle(UiMessages.get("app.title"));
                         } catch (IOException exception) {
                           showRecoveryError(exception);
                         }
@@ -181,7 +179,7 @@ public final class SshTunnelManagerApplication extends Application {
             backups,
             restore);
     javafx.scene.layout.VBox.setVgrow(backups, javafx.scene.layout.Priority.ALWAYS);
-    stage.setTitle("Gestor de túneles SSH — recuperación");
+    stage.setTitle(UiMessages.get("application.title.recovery"));
     stage.setScene(new Scene(content, 800, 520));
     stage.show();
   }
@@ -190,8 +188,10 @@ public final class SshTunnelManagerApplication extends Application {
     javafx.scene.control.Alert alert =
         new javafx.scene.control.Alert(
             javafx.scene.control.Alert.AlertType.ERROR,
-            exception.getMessage() == null ? "Error de recuperación" : exception.getMessage());
-    alert.setHeaderText("No se pudo restaurar el backup");
+            exception.getMessage() == null
+                ? UiMessages.get("application.recovery.error")
+                : exception.getMessage());
+    alert.setHeaderText(UiMessages.get("application.recovery.error.header"));
     alert.showAndWait();
   }
 
@@ -201,6 +201,7 @@ public final class SshTunnelManagerApplication extends Application {
         new FXMLLoader(
             SshTunnelManagerApplication.class.getResource(
                 "/com/ssh/tunnelmanager/ui/shell/shell.fxml"));
+    loader.setResources(UiMessages.spanishBundle());
     loader.setControllerFactory(
         type -> {
           if (type == ShellController.class) {

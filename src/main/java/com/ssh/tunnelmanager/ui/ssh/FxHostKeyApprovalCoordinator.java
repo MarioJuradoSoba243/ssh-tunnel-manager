@@ -2,6 +2,7 @@ package com.ssh.tunnelmanager.ui.ssh;
 
 import com.ssh.tunnelmanager.application.ssh.HostKeyApprovalCoordinator;
 import com.ssh.tunnelmanager.application.ssh.HostKeyApprovalRequest;
+import com.ssh.tunnelmanager.ui.i18n.UiMessages;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
@@ -34,7 +35,7 @@ public final class FxHostKeyApprovalCoordinator implements HostKeyApprovalCoordi
   private static boolean show(HostKeyApprovalRequest request) {
     if (request.previousFingerprintSha256() != null) {
       Alert changed = new Alert(Alert.AlertType.ERROR);
-      changed.setTitle("Fingerprint SSH cambiada");
+      changed.setTitle(UiMessages.get("host.key.changed.title"));
       changed.setHeaderText("Conexión bloqueada por cambio de host key");
       changed.setContentText(
           request.hostname()
@@ -46,13 +47,14 @@ public final class FxHostKeyApprovalCoordinator implements HostKeyApprovalCoordi
               + request.previousFingerprintSha256()
               + "\nFingerprint nueva: "
               + request.fingerprintSha256()
-              + "\n\nElimina la confianza desde Hosts SSH solo si el cambio es esperado.");
+              + "\n\n"
+              + UiMessages.get("host.key.changed.help"));
       changed.showAndWait();
       return false;
     }
     Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-    alert.setTitle("Aprobar fingerprint SSH");
-    alert.setHeaderText("Host SSH desconocido");
+    alert.setTitle(UiMessages.get("host.key.approval.title"));
+    alert.setHeaderText(UiMessages.get("host.key.unknown"));
     alert.setContentText(
         request.hostname()
             + ":"
