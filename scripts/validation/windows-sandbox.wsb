@@ -1,0 +1,12 @@
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\REPLACE_WITH_REPOSITORY_ROOT</HostFolder>
+      <SandboxFolder>C:\v1-validation</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File C:\v1-validation\scripts\validation\validate-windows-package.ps1 -RepositoryRoot C:\v1-validation</Command>
+  </LogonCommand>
+</Configuration>

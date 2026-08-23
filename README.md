@@ -225,6 +225,24 @@ El ejecutable del portable está en la raíz de la carpeta extraída:
 Si se parte del ZIP, extráelo completamente antes de ejecutar el `.exe`; no
 ejecutes el archivo desde dentro del visor comprimido.
 
+Para repetir la validación automatizada de los paquetes en Windows:
+
+```powershell
+.\scripts\validation\validate-windows-package.ps1
+.\scripts\validation\validate-windows-package.ps1 -Installer -Uninstall
+```
+
+El segundo comando debe ejecutarse en una máquina limpia para validar una
+instalación per-user y su posterior desinstalación. Hay una plantilla de
+Windows Sandbox en `scripts/validation/windows-sandbox.wsb`; sustituye el
+directorio de repositorio de ejemplo antes de abrirla. La checklist manual de
+escalado, UI, cuenta estándar y release está en
+`docs/technical/v1-manual-validation.md`.
+
+El workflow `CI` también admite `workflow_dispatch` desde GitHub Actions. El
+job `package` valida los nombres de los artefactos y publica el instalador y
+el portable como `ssh-tunnel-manager-windows`.
+
 Los cambios relacionados con SSH deberán ejecutar además los integration tests correspondientes.
 
 Los cambios de distribución deberán validar `jpackage` en Windows.
