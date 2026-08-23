@@ -37,6 +37,14 @@ class TunnelEditorViewModelTest {
   }
 
   @Test
+  void newTunnelDefaultsLocalAndDestinationHostsToLoopback() {
+    TunnelEditorViewModel.Form form = TunnelEditorViewModel.newForm();
+
+    assertThat(form.bindAddress()).isEqualTo("127.0.0.1");
+    assertThat(form.destinationHost()).isEqualTo("127.0.0.1");
+  }
+
+  @Test
   void rejectsInvalidPortsAndIncoherentJumpRouteBeforeSave() {
     TunnelEditorViewModel.Form form =
         new TunnelEditorViewModel.Form(

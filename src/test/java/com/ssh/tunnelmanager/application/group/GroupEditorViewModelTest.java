@@ -37,6 +37,24 @@ class GroupEditorViewModelTest {
         .isEqualTo(Set.of(second));
   }
 
+  @Test
+  void preservesMultipleSelectedMembersWhenEditingAGroup() {
+    UUID first = UUID.randomUUID();
+    UUID second = UUID.randomUUID();
+    TunnelStore tunnels =
+        new TunnelStore(List.of(tunnel(first, "Frontend"), tunnel(second, "Backend")));
+    GroupStore groups = new GroupStore();
+    SaveTunnelGroupUseCase save = new SaveTunnelGroupUseCase(groups, tunnels);
+    GroupEditorViewModel editor = new GroupEditorViewModel(tunnels, save);
+    UUID groupId = UUID.randomUUID();
+
+    editor.save(
+        new GroupEditorViewModel.Form(groupId, "Development", Set.of(first, second)), false);
+    GroupEditorViewModel.Form reopened = editor.fromRecord(groups.findById(groupId).orElseThrow());
+
+    assertThat(reopened.tunnelIds()).containsExactlyInAnyOrder(first, second);
+  }
+
   private static TunnelRecord tunnel(UUID id, String name) {
     return new TunnelRecord(
         id,

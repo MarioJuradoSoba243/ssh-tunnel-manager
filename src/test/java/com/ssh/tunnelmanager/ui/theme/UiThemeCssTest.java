@@ -40,7 +40,11 @@ class UiThemeCssTest {
             ".combo-box-popup .list-cell:hover",
             ".dialog-pane",
             ".filter-bar",
-            ".action-bar");
+            ".action-bar",
+            ".menu-button",
+            ".tag-chip",
+            ".settings-section",
+            ".scroll-bar .thumb");
   }
 
   private static String read(String resource) throws IOException {

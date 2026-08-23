@@ -60,7 +60,11 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
@@ -68,12 +72,13 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.TitledPane;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 public final class ShellController implements AutoCloseable {
@@ -391,20 +396,30 @@ public final class ShellController implements AutoCloseable {
       showInfo("Resultados de búsqueda", "No se encontraron túneles, grupos ni hosts.");
       return;
     }
-    javafx.scene.control.ChoiceDialog<SearchResult> dialog =
-        new javafx.scene.control.ChoiceDialog<>(results.getFirst(), results);
+    javafx.scene.control.Dialog<SearchResult> dialog =
+        choiceDialog(
+            "Resultados de búsqueda",
+            "Resultados para: " + query + " · elige uno para navegar",
+            results.getFirst(),
+            results,
+            result -> result.title() + " — " + result.subtitle());
     dialog.setTitle("Resultados de búsqueda");
-    dialog.setHeaderText("Resultados para: " + query + " · elige uno para navegar");
-    dialog.setContentText("Resultado:");
-    dialog.getDialogPane().lookupButton(ButtonType.OK).setDisable(false);
     dialog
         .showAndWait()
         .ifPresent(
             result ->
                 navigationList.getItems().stream()
-                    .filter(item -> item.id().equals(result.kind().name().toLowerCase()))
+                    .filter(item -> item.id().equals(navigationId(result.kind())))
                     .findFirst()
                     .ifPresent(item -> navigationList.getSelectionModel().select(item)));
+  }
+
+  private static String navigationId(SearchResult.Kind kind) {
+    return switch (kind) {
+      case TUNNEL -> "tunnels";
+      case GROUP -> "groups";
+      case HOST -> "hosts";
+    };
   }
 
   private void navigateToTunnelState(com.ssh.tunnelmanager.domain.tunnel.ActualState state) {
@@ -428,56 +443,46 @@ public final class ShellController implements AutoCloseable {
     ListView<ProjectRecord> projects = new ListView<>();
     ListView<EnvironmentRecord> environments = new ListView<>();
     ListView<TagRecord> tags = new ListView<>();
-    contentContainer
-        .getChildren()
-        .add(
-            new TabPane(
-                new Tab(
-                    "Proyectos",
-                    classificationPanel(
-                        projects,
-                        components.projectRepository()::findAll,
-                        ProjectRecord::name,
-                        ProjectRecord::id,
-                        (id, name) ->
-                            components
-                                .saveProject()
-                                .execute(
-                                    new com.ssh.tunnelmanager.domain.organization.Project(
-                                        id, name)),
-                        (id, confirmed) -> components.deleteProject().execute(id, confirmed))),
-                new Tab(
-                    "Entornos",
-                    classificationPanel(
-                        environments,
-                        components.environmentRepository()::findAll,
-                        EnvironmentRecord::name,
-                        EnvironmentRecord::id,
-                        (id, name) ->
-                            components
-                                .saveEnvironment()
-                                .execute(
-                                    new com.ssh.tunnelmanager.domain.organization.Environment(
-                                        id, name)),
-                        (id, confirmed) -> components.deleteEnvironment().execute(id, confirmed))),
-                new Tab(
-                    "Etiquetas",
-                    classificationPanel(
-                        tags,
-                        components.tagRepository()::findAll,
-                        TagRecord::name,
-                        TagRecord::id,
-                        (id, name) ->
-                            components
-                                .saveTag()
-                                .execute(
-                                    new com.ssh.tunnelmanager.domain.organization.Tag(id, name)),
-                        (id, confirmed) -> components.deleteTag().execute(id, confirmed)))));
-    contentContainer.getChildren().stream()
-        .filter(TabPane.class::isInstance)
-        .map(TabPane.class::cast)
-        .findFirst()
-        .ifPresent(pane -> pane.getTabs().forEach(tab -> tab.setClosable(false)));
+    VBox projectPanel =
+        classificationPanel(
+            projects,
+            components.projectRepository()::findAll,
+            ProjectRecord::name,
+            ProjectRecord::id,
+            (id, name) ->
+                components
+                    .saveProject()
+                    .execute(new com.ssh.tunnelmanager.domain.organization.Project(id, name)),
+            (id, confirmed) -> components.deleteProject().execute(id, confirmed));
+    VBox environmentPanel =
+        classificationPanel(
+            environments,
+            components.environmentRepository()::findAll,
+            EnvironmentRecord::name,
+            EnvironmentRecord::id,
+            (id, name) ->
+                components
+                    .saveEnvironment()
+                    .execute(new com.ssh.tunnelmanager.domain.organization.Environment(id, name)),
+            (id, confirmed) -> components.deleteEnvironment().execute(id, confirmed));
+    VBox tagPanel =
+        classificationPanel(
+            tags,
+            components.tagRepository()::findAll,
+            TagRecord::name,
+            TagRecord::id,
+            (id, name) ->
+                components
+                    .saveTag()
+                    .execute(new com.ssh.tunnelmanager.domain.organization.Tag(id, name)),
+            (id, confirmed) -> components.deleteTag().execute(id, confirmed));
+    projectPanel.getChildren().add(0, sectionLabel("Proyectos"));
+    environmentPanel.getChildren().add(0, sectionLabel("Entornos"));
+    tagPanel.getChildren().add(0, sectionLabel("Etiquetas"));
+    FlowPane columns = new FlowPane(12, 12, projectPanel, environmentPanel, tagPanel);
+    columns.getStyleClass().add("organization-columns");
+    columns.setMaxWidth(Double.MAX_VALUE);
+    contentContainer.getChildren().add(columns);
   }
 
   private void showSettings() {
@@ -492,6 +497,7 @@ public final class ShellController implements AutoCloseable {
     ComboBox<String> theme = new ComboBox<>();
     theme.getItems().setAll("LIGHT", "DARK", "SYSTEM");
     theme.setValue(components.settings().theme());
+    theme.setMaxWidth(Double.MAX_VALUE);
     theme.setOnAction(
         event -> {
           components.settings().setTheme(theme.getValue());
@@ -505,18 +511,27 @@ public final class ShellController implements AutoCloseable {
     ComboBox<String> logging = new ComboBox<>();
     logging.getItems().setAll("TRACE", "DEBUG", "INFO", "WARN", "ERROR");
     logging.setValue(components.settings().loggingLevel());
+    logging.setMaxWidth(Double.MAX_VALUE);
     logging.setOnAction(
         event -> {
           components.settings().setLoggingLevel(logging.getValue());
           components.loggingLevel().apply(logging.getValue());
         });
     GridPane shortcuts = new GridPane();
+    shortcuts.getStyleClass().add("settings-shortcuts");
     shortcuts.setHgap(8);
     shortcuts.setVgap(6);
+    ColumnConstraints shortcutLabels = new ColumnConstraints();
+    shortcutLabels.setMinWidth(170);
+    ColumnConstraints shortcutInputs = new ColumnConstraints();
+    shortcutInputs.setHgrow(Priority.ALWAYS);
+    shortcutInputs.setFillWidth(true);
+    shortcuts.getColumnConstraints().addAll(shortcutLabels, shortcutInputs);
     Map<ShortcutAction, TextField> shortcutFields = new java.util.EnumMap<>(ShortcutAction.class);
     int row = 0;
     for (ShortcutAction action : ShortcutAction.values()) {
       TextField field = new TextField(components.shortcuts().load().get(action));
+      field.setMaxWidth(Double.MAX_VALUE);
       shortcutFields.put(action, field);
       shortcuts.add(new Label(action.label()), 0, row);
       shortcuts.add(field, 1, row++);
@@ -538,27 +553,28 @@ public final class ShellController implements AutoCloseable {
     backups.setOnAction(event -> restoreBackup());
     diagnostic.setOnAction(event -> exportDiagnostic());
     logs.setOnAction(event -> openLogsFolder());
+    Label exportWarning =
+        new Label(
+            "La exportación completa contiene contraseñas recuperables. "
+                + "Guárdala solo en un lugar seguro.");
+    exportWarning.setWrapText(true);
+    exportWarning.getStyleClass().add("warning-text");
+    VBox appearance = new VBox(8, new Label("Tema"), theme);
+    VBox notificationsSection = new VBox(8, notifications);
+    VBox keyboard = new VBox(8, shortcuts, flowPane(saveShortcuts));
+    VBox data = new VBox(8, exportWarning, flowPane(export, importButton, backups));
+    VBox diagnostics =
+        new VBox(8, new Label("Nivel de logging"), logging, flowPane(diagnostic, logs));
     contentContainer
         .getChildren()
         .add(
             new VBox(
-                12,
-                new Label("Tema"),
-                theme,
-                notifications,
-                new Label("Nivel de logging"),
-                logging,
-                new Label("Atajos de teclado"),
-                shortcuts,
-                saveShortcuts,
-                new Label(
-                    "La exportación completa contiene contraseñas recuperables. "
-                        + "Guárdala solo en un lugar seguro."),
-                export,
-                importButton,
-                backups,
-                diagnostic,
-                logs));
+                10,
+                settingsSection("Apariencia", appearance),
+                settingsSection("Notificaciones", notificationsSection),
+                settingsSection("Atajos de teclado", keyboard),
+                settingsSection("Datos", data),
+                settingsSection("Diagnóstico", diagnostics)));
   }
 
   private void exportDiagnostic() {
@@ -666,6 +682,7 @@ public final class ShellController implements AutoCloseable {
     ButtonType continueButton = new ButtonType("Continuar", ButtonBar.ButtonData.OK_DONE);
     dialog.getDialogPane().getButtonTypes().setAll(continueButton, ButtonType.CANCEL);
     ComboBox<ConflictAction> applyAll = new ComboBox<>();
+    configureComboPresentation(applyAll, ShellController::conflictActionText);
     applyAll
         .getItems()
         .addAll(
@@ -677,6 +694,7 @@ public final class ShellController implements AutoCloseable {
     Map<ConflictKey, ComboBox<ConflictAction>> choices = new java.util.LinkedHashMap<>();
     for (ImportConflict conflict : preview.conflicts()) {
       ComboBox<ConflictAction> choice = new ComboBox<>();
+      configureComboPresentation(choice, ShellController::conflictActionText);
       choice.getItems().addAll(actionsFor(conflict.key().type()));
       choice.setValue(ConflictAction.KEEP_CURRENT);
       choices.put(conflict.key(), choice);
@@ -790,11 +808,13 @@ public final class ShellController implements AutoCloseable {
       showInfo("Backups", "No hay backups SQLite utilizables.");
       return;
     }
-    javafx.scene.control.ChoiceDialog<java.nio.file.Path> dialog =
-        new javafx.scene.control.ChoiceDialog<>(values.getFirst(), values);
-    dialog.setTitle("Restaurar backup");
-    dialog.setHeaderText("Selecciona un snapshot SQLite válido");
-    dialog.setContentText("Backup:");
+    javafx.scene.control.Dialog<java.nio.file.Path> dialog =
+        choiceDialog(
+            "Restaurar backup",
+            "Selecciona un snapshot SQLite válido",
+            values.getFirst(),
+            values,
+            path -> path.getFileName().toString());
     dialog
         .showAndWait()
         .ifPresent(
@@ -879,8 +899,37 @@ public final class ShellController implements AutoCloseable {
         });
     refresh.run();
     VBox panel = new VBox(8, list, flowPane(add, edit, remove));
+    panel.getStyleClass().add("classification-panel");
+    panel.setMinWidth(220);
+    panel.setPrefWidth(280);
+    panel.setMaxWidth(420);
+    list.setPrefHeight(260);
+    list.setMinHeight(140);
+    list.setMaxHeight(420);
     VBox.setVgrow(list, Priority.ALWAYS);
     return panel;
+  }
+
+  private static String conflictActionText(ConflictAction action) {
+    return switch (action) {
+      case KEEP_CURRENT -> "Mantener actual";
+      case REPLACE -> "Reemplazar con importado";
+      case CREATE_COPY -> "Importar como copia";
+    };
+  }
+
+  private static TitledPane settingsSection(String title, Node content) {
+    TitledPane section = new TitledPane(title, content);
+    section.setExpanded(true);
+    section.setMaxWidth(Double.MAX_VALUE);
+    section.getStyleClass().add("settings-section");
+    return section;
+  }
+
+  private static Label sectionLabel(String text) {
+    Label label = new Label(text);
+    label.getStyleClass().add("classification-title");
+    return label;
   }
 
   private <T> void editClassification(
@@ -1092,22 +1141,7 @@ public final class ShellController implements AutoCloseable {
             initial.environmentId(),
             EnvironmentRecord::id,
             EnvironmentRecord::name);
-    ListView<TagRecord> tagSelection =
-        new ListView<>(FXCollections.observableArrayList(tagRecords));
-    tagSelection.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
-    tagRecords.stream()
-        .filter(tag -> initial.tagIds().contains(tag.id()))
-        .forEach(tag -> tagSelection.getSelectionModel().select(tag));
-    tagSelection.setPrefHeight(90);
-    tagSelection.setCellFactory(
-        ignored ->
-            new ListCell<>() {
-              @Override
-              protected void updateItem(TagRecord item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.name());
-              }
-            });
+    TagSelectionControl tagSelection = new TagSelectionControl(tagRecords, initial.tagIds());
     CheckBox favorite = new CheckBox("Favorito");
     favorite.setSelected(initial.favorite());
     TextField search = new TextField();
@@ -1141,6 +1175,8 @@ public final class ShellController implements AutoCloseable {
         data -> new javafx.beans.property.SimpleStringProperty(data.getValue().endpoint()));
     choices.getColumns().addAll(selected, tunnelName, endpoint);
     choices.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    choices.setEditable(true);
+    selected.setEditable(true);
     selected.setMinWidth(75);
     tunnelName.setMinWidth(180);
     endpoint.setMinWidth(180);
@@ -1179,7 +1215,7 @@ public final class ShellController implements AutoCloseable {
       List<GroupChoice> rows,
       ComboBox<ProjectRecord> project,
       ComboBox<EnvironmentRecord> environment,
-      ListView<TagRecord> tags,
+      TagSelectionControl tags,
       CheckBox favorite) {
     UUID id = existing == null ? UUID.randomUUID() : existing.id();
     GroupEditorViewModel.Form form =
@@ -1193,9 +1229,7 @@ public final class ShellController implements AutoCloseable {
             project.getValue() == null ? null : project.getValue().id(),
             environment.getValue() == null ? null : environment.getValue().id(),
             favorite.isSelected(),
-            tags.getSelectionModel().getSelectedItems().stream()
-                .map(TagRecord::id)
-                .collect(java.util.stream.Collectors.toSet()));
+            tags.selectedTagIds());
     workers.submit(
         () -> {
           try {
@@ -1303,20 +1337,20 @@ public final class ShellController implements AutoCloseable {
         });
     Button add = new Button("Nuevo túnel");
     Button edit = new Button("Editar");
-    Button duplicate = new Button("Duplicar");
-    Button remove = new Button("Eliminar");
-    Button test = new Button("Probar conexión");
     Button start = new Button("Iniciar");
     Button stop = new Button("Detener");
-    Button retry = new Button("Reintentar");
-    Button details = new Button("Ver detalles");
-    Button bulkStart = new Button("Iniciar selección");
-    Button bulkStop = new Button("Detener selección");
-    Button favoriteOn = new Button("Favorito");
-    Button favoriteOff = new Button("Quitar favorito");
-    Button assignProject = new Button("Asignar proyecto/entorno");
-    Button assignGroup = new Button("Añadir a grupo");
-    Button removeGroup = new Button("Quitar de grupo");
+    MenuItem duplicate = new MenuItem("Duplicar");
+    MenuItem remove = new MenuItem("Eliminar");
+    MenuItem test = new MenuItem("Probar conexión");
+    MenuItem retry = new MenuItem("Reintentar");
+    MenuItem details = new MenuItem("Ver detalles");
+    MenuItem bulkStart = new MenuItem("Iniciar selección");
+    MenuItem bulkStop = new MenuItem("Detener selección");
+    MenuItem favoriteOn = new MenuItem("Marcar selección como favorita");
+    MenuItem favoriteOff = new MenuItem("Quitar favorito a la selección");
+    MenuItem assignProject = new MenuItem("Asignar proyecto/entorno");
+    MenuItem assignGroup = new MenuItem("Añadir selección a un grupo");
+    MenuItem removeGroup = new MenuItem("Quitar selección de un grupo");
     add.setOnAction(event -> openTunnelEditor(tunnelTable, null));
     edit.setOnAction(
         event -> openTunnelEditor(tunnelTable, tunnelTable.getSelectionModel().getSelectedItem()));
@@ -1339,13 +1373,38 @@ public final class ShellController implements AutoCloseable {
     assignProject.setOnAction(event -> bulkAssignProject());
     assignGroup.setOnAction(event -> bulkAssignGroup());
     removeGroup.setOnAction(event -> bulkRemoveGroup());
+    Menu bulk = new Menu("Operaciones sobre la selección");
+    bulk.getItems()
+        .addAll(
+            bulkStart,
+            bulkStop,
+            new SeparatorMenuItem(),
+            favoriteOn,
+            favoriteOff,
+            assignProject,
+            assignGroup,
+            removeGroup);
+    MenuButton more = new MenuButton("Más");
+    more.getItems()
+        .addAll(
+            test,
+            retry,
+            details,
+            new SeparatorMenuItem(),
+            bulk,
+            new SeparatorMenuItem(),
+            duplicate,
+            remove);
     tunnelSearch = new TextField();
     tunnelSearch.setPromptText("Filtrar nombre o destino");
     tunnelProjectFilter = new ComboBox<>();
+    configureComboPresentation(tunnelProjectFilter, ProjectRecord::name);
     tunnelProjectFilter.setPromptText("Proyecto");
     tunnelEnvironmentFilter = new ComboBox<>();
+    configureComboPresentation(tunnelEnvironmentFilter, EnvironmentRecord::name);
     tunnelEnvironmentFilter.setPromptText("Entorno");
     tunnelGroupFilter = new ComboBox<>();
+    configureComboPresentation(tunnelGroupFilter, TunnelGroupRecord::name);
     tunnelGroupFilter.setPromptText("Grupo");
     tunnelStateFilter =
         new ComboBox<>(
@@ -1374,7 +1433,7 @@ public final class ShellController implements AutoCloseable {
             tunnelEnvironmentFilter,
             tunnelGroupFilter,
             tunnelStateFilter,
-            tunnelTagFilter);
+            tagFilterBox());
     filters.getStyleClass().add("filter-bar");
     tunnelSearch.textProperty().addListener((obs, old, value) -> applyTunnelFilters());
     tunnelProjectFilter.valueProperty().addListener((obs, old, value) -> applyTunnelFilters());
@@ -1386,11 +1445,8 @@ public final class ShellController implements AutoCloseable {
         .getSelectedItems()
         .addListener(
             (javafx.collections.ListChangeListener<TagRecord>) change -> applyTunnelFilters());
-    FlowPane actions = flowPane(add, edit, duplicate, remove, test, start, stop, retry, details);
-    FlowPane bulkActions =
-        flowPane(
-            bulkStart, bulkStop, favoriteOn, favoriteOff, assignProject, assignGroup, removeGroup);
-    contentContainer.getChildren().addAll(filters, tunnelTable, actions, bulkActions);
+    FlowPane actions = flowPane(start, stop, add, edit, more);
+    contentContainer.getChildren().addAll(filters, tunnelTable, actions);
     refreshTunnels(tunnelTable);
   }
 
@@ -1516,10 +1572,13 @@ public final class ShellController implements AutoCloseable {
   private void bulkAssignProject() {
     List<ProjectRecord> projects = components.projectRepository().findAll();
     if (projects.isEmpty()) return;
-    javafx.scene.control.ChoiceDialog<ProjectRecord> dialog =
-        new javafx.scene.control.ChoiceDialog<>(projects.getFirst(), projects);
-    dialog.setTitle("Asignar proyecto");
-    dialog.setHeaderText("Selecciona un proyecto");
+    javafx.scene.control.Dialog<ProjectRecord> dialog =
+        choiceDialog(
+            "Asignar proyecto",
+            "Selecciona un proyecto",
+            projects.getFirst(),
+            projects,
+            ProjectRecord::name);
     dialog
         .showAndWait()
         .ifPresent(
@@ -1529,10 +1588,13 @@ public final class ShellController implements AutoCloseable {
                 bulkAssignClassification(project.id(), null);
                 return;
               }
-              javafx.scene.control.ChoiceDialog<EnvironmentRecord> environmentDialog =
-                  new javafx.scene.control.ChoiceDialog<>(environments.getFirst(), environments);
-              environmentDialog.setTitle("Asignar entorno");
-              environmentDialog.setHeaderText("Selecciona un entorno");
+              javafx.scene.control.Dialog<EnvironmentRecord> environmentDialog =
+                  choiceDialog(
+                      "Asignar entorno",
+                      "Selecciona un entorno",
+                      environments.getFirst(),
+                      environments,
+                      EnvironmentRecord::name);
               environmentDialog
                   .showAndWait()
                   .ifPresent(
@@ -1558,10 +1620,13 @@ public final class ShellController implements AutoCloseable {
   private void bulkAssignGroup() {
     List<TunnelGroupRecord> groups = components.groupRepository().findAll();
     if (groups.isEmpty()) return;
-    javafx.scene.control.ChoiceDialog<TunnelGroupRecord> dialog =
-        new javafx.scene.control.ChoiceDialog<>(groups.getFirst(), groups);
-    dialog.setTitle("Añadir a grupo");
-    dialog.setHeaderText("Selecciona un grupo");
+    javafx.scene.control.Dialog<TunnelGroupRecord> dialog =
+        choiceDialog(
+            "Añadir a grupo",
+            "Selecciona un grupo",
+            groups.getFirst(),
+            groups,
+            TunnelGroupRecord::name);
     dialog
         .showAndWait()
         .ifPresent(
@@ -1579,10 +1644,13 @@ public final class ShellController implements AutoCloseable {
   private void bulkRemoveGroup() {
     List<TunnelGroupRecord> groups = components.groupRepository().findAll();
     if (groups.isEmpty()) return;
-    javafx.scene.control.ChoiceDialog<TunnelGroupRecord> dialog =
-        new javafx.scene.control.ChoiceDialog<>(groups.getFirst(), groups);
-    dialog.setTitle("Quitar de grupo");
-    dialog.setHeaderText("Selecciona un grupo");
+    javafx.scene.control.Dialog<TunnelGroupRecord> dialog =
+        choiceDialog(
+            "Quitar de grupo",
+            "Selecciona un grupo",
+            groups.getFirst(),
+            groups,
+            TunnelGroupRecord::name);
     dialog
         .showAndWait()
         .ifPresent(
@@ -1623,19 +1691,18 @@ public final class ShellController implements AutoCloseable {
     javafx.scene.control.PasswordField password = new javafx.scene.control.PasswordField();
     if (domain != null) password.setText(domain.credential().password());
     TextField visiblePassword = new TextField(password.getText());
+    password.textProperty().bindBidirectional(visiblePassword.textProperty());
     CheckBox showPassword = new CheckBox("Mostrar contraseña");
     showPassword
         .selectedProperty()
         .addListener(
             (obs, old, selected) -> {
-              if (selected) visiblePassword.setText(password.getText());
               visiblePassword.setVisible(selected);
-              visiblePassword.setManaged(selected);
               password.setVisible(!selected);
-              password.setManaged(!selected);
             });
     visiblePassword.setVisible(false);
-    visiblePassword.setManaged(false);
+    StackPane passwordStack = new StackPane(password, visiblePassword);
+    passwordStack.getStyleClass().add("password-stack");
     GridPane grid =
         formGrid(
             "Nombre",
@@ -1647,10 +1714,10 @@ public final class ShellController implements AutoCloseable {
             "Usuario",
             username,
             UiMessages.get("tunnel.editor.password"),
-            password);
+            passwordStack);
     grid.add(showPassword, 1, 5);
-    grid.add(visiblePassword, 1, 6);
     dialog.getDialogPane().setContent(grid);
+    dialog.getDialogPane().setMinWidth(520);
     ButtonType saveButton = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
     dialog.getDialogPane().getButtonTypes().addAll(saveButton, ButtonType.CANCEL);
     dialog.setResultConverter(button -> button == saveButton ? button : null);
@@ -1739,10 +1806,7 @@ public final class ShellController implements AutoCloseable {
         .removeIf(node -> node != sectionTitle && node != sectionDescription);
     sectionDescription.setText("Editor de túnel: valida localmente antes de guardar.");
     TunnelEditorViewModel.Form initial =
-        existing == null
-            ? new TunnelEditorViewModel.Form(
-                null, "", "127.0.0.1", "", "", "", null, null, null, "", "", "", "")
-            : tunnelEditor.fromRecord(existing);
+        existing == null ? TunnelEditorViewModel.newForm() : tunnelEditor.fromRecord(existing);
     TextField name = new TextField(initial.name());
     TextField bind = new TextField(initial.bindAddress());
     TextField localPort = new TextField(initial.localPort());
@@ -1760,22 +1824,7 @@ public final class ShellController implements AutoCloseable {
             initial.environmentId(),
             EnvironmentRecord::id,
             EnvironmentRecord::name);
-    ListView<TagRecord> tagSelection =
-        new ListView<>(FXCollections.observableArrayList(tagRecords));
-    tagSelection.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
-    tagRecords.stream()
-        .filter(tag -> initial.tagIds().contains(tag.id()))
-        .forEach(tag -> tagSelection.getSelectionModel().select(tag));
-    tagSelection.setPrefHeight(90);
-    tagSelection.setCellFactory(
-        ignored ->
-            new ListCell<>() {
-              @Override
-              protected void updateItem(TagRecord item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.name());
-              }
-            });
+    TagSelectionControl tagSelection = new TagSelectionControl(tagRecords, initial.tagIds());
     CheckBox favorite = new CheckBox("Favorito");
     favorite.setSelected(initial.favorite());
     TextField keepAlive = new TextField(initial.keepAliveSeconds());
@@ -1788,11 +1837,12 @@ public final class ShellController implements AutoCloseable {
     options.setPromptText("Una opción por línea, por ejemplo: ServerAliveCountMax=3");
     options.setPrefRowCount(7);
 
-    Tab general = new Tab(UiMessages.get("tunnel.editor.tab.general"), formGrid("Nombre", name));
-    Tab forwarding =
+    Tab primary =
         new Tab(
-            UiMessages.get("tunnel.editor.tab.forwarding"),
+            "Túnel",
             formGrid(
+                "Nombre",
+                name,
                 UiMessages.get("tunnel.editor.bind"),
                 bind,
                 "Puerto local",
@@ -1800,17 +1850,21 @@ public final class ShellController implements AutoCloseable {
                 "Host destino",
                 destinationHost,
                 "Puerto destino",
-                destinationPort));
-    Tab route =
-        new Tab(
-            UiMessages.get("tunnel.editor.tab.route"),
-            formGrid(
+                destinationPort,
+                "SSH final",
+                finalHost,
                 UiMessages.get("tunnel.editor.jump1"),
                 jump1,
                 UiMessages.get("tunnel.editor.jump2"),
                 jump2,
-                "SSH final",
-                finalHost));
+                "Proyecto",
+                project,
+                "Entorno",
+                environment,
+                "Etiquetas",
+                tagSelection,
+                "",
+                favorite));
     Tab advanced =
         new Tab(
             UiMessages.get("tunnel.editor.tab.advanced"),
@@ -1823,26 +1877,13 @@ public final class ShellController implements AutoCloseable {
                 retries,
                 "Opciones SSH",
                 options));
-    Tab organization =
-        new Tab(
-            UiMessages.get("tunnel.editor.tab.organization"),
-            formGrid(
-                "Proyecto",
-                project,
-                "Entorno",
-                environment,
-                "Etiquetas",
-                tagSelection,
-                "",
-                favorite));
-    List.of(general, forwarding, route, advanced, organization)
-        .forEach(tab -> tab.setClosable(false));
-    TabPane tabs = new TabPane(general, forwarding, route, advanced, organization);
+    List.of(primary, advanced).forEach(tab -> tab.setClosable(false));
+    TabPane tabs = new TabPane(primary, advanced);
     Label validation = new Label();
     validation.getStyleClass().add("error-text");
     Button saveButton = new Button("Guardar");
     Button cancelButton = new Button("Cancelar");
-    HBox actions = new HBox(8, saveButton, cancelButton);
+    FlowPane actions = flowPane(saveButton, cancelButton);
     VBox editor = new VBox(12, tabs, validation, actions);
     VBox.setVgrow(tabs, Priority.ALWAYS);
     ScrollPane scroll = new ScrollPane(editor);
@@ -2057,8 +2098,7 @@ public final class ShellController implements AutoCloseable {
 
   private static ComboBox<SshHostRecord> hostCombo(List<SshHostRecord> hosts, UUID selected) {
     ComboBox<SshHostRecord> combo = new ComboBox<>(FXCollections.observableArrayList(hosts));
-    combo.setCellFactory(ignored -> hostCell());
-    combo.setButtonCell(hostCell());
+    configureComboPresentation(combo, host -> host.name() + " (" + host.hostname() + ")");
     hosts.stream()
         .filter(host -> host.id().equals(selected))
         .findFirst()
@@ -2066,14 +2106,41 @@ public final class ShellController implements AutoCloseable {
     return combo;
   }
 
-  private static ListCell<SshHostRecord> hostCell() {
-    return new ListCell<>() {
-      @Override
-      protected void updateItem(SshHostRecord item, boolean empty) {
-        super.updateItem(item, empty);
-        setText(empty || item == null ? null : item.name() + " (" + item.hostname() + ")");
-      }
-    };
+  private static <T> void configureComboPresentation(
+      ComboBox<T> combo, Function<T, String> display) {
+    combo.setCellFactory(
+        ignored ->
+            new ListCell<>() {
+              @Override
+              protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : display.apply(item));
+              }
+            });
+    combo.setButtonCell(
+        new ListCell<>() {
+          @Override
+          protected void updateItem(T item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(empty || item == null ? null : display.apply(item));
+          }
+        });
+    combo.setMaxWidth(Double.MAX_VALUE);
+  }
+
+  private static <T> javafx.scene.control.Dialog<T> choiceDialog(
+      String title, String header, T selected, List<T> values, Function<T, String> display) {
+    javafx.scene.control.Dialog<T> dialog = new javafx.scene.control.Dialog<>();
+    ComboBox<T> combo = new ComboBox<>(FXCollections.observableArrayList(values));
+    configureComboPresentation(combo, display);
+    combo.setValue(selected);
+    dialog.setTitle(title);
+    dialog.setHeaderText(header);
+    dialog.getDialogPane().setContent(combo);
+    ButtonType ok = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
+    dialog.getDialogPane().getButtonTypes().setAll(ok, ButtonType.CANCEL);
+    dialog.setResultConverter(button -> button == ok ? combo.getValue() : null);
+    return dialog;
   }
 
   private static TunnelEditorViewModel.Form form(
@@ -2092,7 +2159,7 @@ public final class ShellController implements AutoCloseable {
       TextArea options,
       ComboBox<ProjectRecord> project,
       ComboBox<EnvironmentRecord> environment,
-      ListView<TagRecord> tags,
+      TagSelectionControl tags,
       CheckBox favorite) {
     return new TunnelEditorViewModel.Form(
         id,
@@ -2110,32 +2177,14 @@ public final class ShellController implements AutoCloseable {
         options.getText(),
         project.getValue() == null ? null : project.getValue().id(),
         environment.getValue() == null ? null : environment.getValue().id(),
-        tags.getSelectionModel().getSelectedItems().stream()
-            .map(TagRecord::id)
-            .collect(java.util.stream.Collectors.toSet()),
+        tags.selectedTagIds(),
         favorite.isSelected());
   }
 
   private static <T> ComboBox<T> classificationCombo(
       List<T> values, UUID selected, Function<T, UUID> id, Function<T, String> name) {
     ComboBox<T> combo = new ComboBox<>(FXCollections.observableArrayList(values));
-    combo.setCellFactory(
-        ignored ->
-            new ListCell<>() {
-              @Override
-              protected void updateItem(T item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : name.apply(item));
-              }
-            });
-    combo.setButtonCell(
-        new ListCell<>() {
-          @Override
-          protected void updateItem(T item, boolean empty) {
-            super.updateItem(item, empty);
-            setText(empty || item == null ? null : name.apply(item));
-          }
-        });
+    configureComboPresentation(combo, name);
     values.stream()
         .filter(value -> id.apply(value).equals(selected))
         .findFirst()
@@ -2191,6 +2240,12 @@ public final class ShellController implements AutoCloseable {
     pane.setMaxWidth(Double.MAX_VALUE);
     pane.getChildren().addAll(children);
     return pane;
+  }
+
+  private VBox tagFilterBox() {
+    VBox box = new VBox(4, new Label("Etiquetas"), tunnelTagFilter);
+    box.getStyleClass().add("tag-filter");
+    return box;
   }
 
   private static GridPane formGrid(Object... values) {

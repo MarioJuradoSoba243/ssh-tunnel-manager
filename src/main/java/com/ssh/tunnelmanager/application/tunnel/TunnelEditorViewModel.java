@@ -137,6 +137,10 @@ public final class TunnelEditorViewModel {
         record.favorite());
   }
 
+  public static Form newForm() {
+    return new Form(null, "", "127.0.0.1", "", "127.0.0.1", "", null, null, null, "", "", "", "");
+  }
+
   private Tunnel toDomain(Form form) {
     Map<UUID, SshHost> resolved = new LinkedHashMap<>();
     for (UUID hostId :
