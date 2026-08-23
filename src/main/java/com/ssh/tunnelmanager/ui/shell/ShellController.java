@@ -69,6 +69,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -291,7 +293,7 @@ public final class ShellController implements AutoCloseable {
             10,
             summary,
             emptyFlow,
-            new HBox(8, open, reconnecting, errors),
+            flowPane(open, reconnecting, errors),
             new Label("Favoritos"),
             favorites,
             new Label("Recientes"),
@@ -299,9 +301,15 @@ public final class ShellController implements AutoCloseable {
             new Label("Túneles activos"),
             active,
             stopAll);
-    VBox.setVgrow(favorites, Priority.ALWAYS);
-    VBox.setVgrow(recent, Priority.ALWAYS);
-    VBox.setVgrow(active, Priority.ALWAYS);
+    VBox.setVgrow(favorites, Priority.NEVER);
+    VBox.setVgrow(recent, Priority.NEVER);
+    VBox.setVgrow(active, Priority.NEVER);
+    favorites.setPrefHeight(120);
+    recent.setPrefHeight(120);
+    active.setPrefHeight(120);
+    favorites.setMaxHeight(180);
+    recent.setMaxHeight(180);
+    active.setMaxHeight(180);
     contentContainer.getChildren().add(content);
     workers.submit(
         () -> {
@@ -672,19 +680,19 @@ public final class ShellController implements AutoCloseable {
       choice.getItems().addAll(actionsFor(conflict.key().type()));
       choice.setValue(ConflictAction.KEEP_CURRENT);
       choices.put(conflict.key(), choice);
-      rows.getChildren()
-          .add(
-              new HBox(
-                  8,
-                  new Label(
-                      conflict.key().type()
-                          + " · "
-                          + conflict.name()
-                          + "\nActual: "
-                          + conflict.currentSummary()
-                          + "\nImportado: "
-                          + conflict.importedSummary()),
-                  choice));
+      Label conflictLabel =
+          new Label(
+              conflict.key().type()
+                  + " · "
+                  + conflict.name()
+                  + "\nActual: "
+                  + conflict.currentSummary()
+                  + "\nImportado: "
+                  + conflict.importedSummary());
+      conflictLabel.setWrapText(true);
+      conflictLabel.setMaxWidth(560);
+      FlowPane conflictRow = flowPane(conflictLabel, choice);
+      rows.getChildren().add(conflictRow);
     }
     javafx.scene.control.ScrollPane scroll = new javafx.scene.control.ScrollPane(rows);
     scroll.setFitToWidth(true);
@@ -870,7 +878,7 @@ public final class ShellController implements AutoCloseable {
           deleteClassification(selected, id, delete, refresh);
         });
     refresh.run();
-    VBox panel = new VBox(8, list, new HBox(8, add, edit, remove));
+    VBox panel = new VBox(8, list, flowPane(add, edit, remove));
     VBox.setVgrow(list, Priority.ALWAYS);
     return panel;
   }
@@ -975,9 +983,15 @@ public final class ShellController implements AutoCloseable {
     remove.setOnAction(event -> deleteSelectedGroup());
     start.setOnAction(event -> operateSelectedGroup(groups::start));
     stop.setOnAction(event -> operateSelectedGroup(groups::stop));
+    groupTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    groupTable.setPrefHeight(300);
+    groupTable.setMaxHeight(420);
+    name.setMinWidth(180);
+    members.setMinWidth(90);
+    state.setMinWidth(180);
     contentContainer
         .getChildren()
-        .addAll(groupTable, new HBox(8, add, edit, duplicate, remove, start, stop));
+        .addAll(groupTable, flowPane(add, edit, duplicate, remove, start, stop));
     refreshGroups(groupTable);
     statusRefresh =
         new Timeline(
@@ -1126,6 +1140,10 @@ public final class ShellController implements AutoCloseable {
     endpoint.setCellValueFactory(
         data -> new javafx.beans.property.SimpleStringProperty(data.getValue().endpoint()));
     choices.getColumns().addAll(selected, tunnelName, endpoint);
+    choices.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    selected.setMinWidth(75);
+    tunnelName.setMinWidth(180);
+    endpoint.setMinWidth(180);
     choices.setItems(filtered);
     Button save = new Button("Guardar");
     Button cancel = new Button("Cancelar");
@@ -1150,7 +1168,7 @@ public final class ShellController implements AutoCloseable {
                 "",
                 favorite),
             choices,
-            new HBox(8, save, cancel));
+            flowPane(save, cancel));
     VBox.setVgrow(choices, Priority.ALWAYS);
     contentContainer.getChildren().add(editor);
   }
@@ -1222,7 +1240,12 @@ public final class ShellController implements AutoCloseable {
             new javafx.beans.property.SimpleStringProperty(
                 data.getValue().hostname() + ":" + data.getValue().sshPort()));
     table.getColumns().addAll(name, endpoint);
-    HBox actions = new HBox(8);
+    table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    table.setPrefHeight(300);
+    table.setMaxHeight(420);
+    name.setMinWidth(180);
+    endpoint.setMinWidth(220);
+    FlowPane actions = flowPane();
     Button add = new Button("Nuevo host");
     Button edit = new Button("Editar");
     Button remove = new Button("Eliminar");
@@ -1262,6 +1285,14 @@ public final class ShellController implements AutoCloseable {
         data ->
             new javafx.beans.property.SimpleStringProperty(data.getValue().favorite() ? "★" : ""));
     tunnelTable.getColumns().addAll(name, endpoint, state, active, favorite);
+    tunnelTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    tunnelTable.setPrefHeight(300);
+    tunnelTable.setMaxHeight(420);
+    name.setMinWidth(180);
+    endpoint.setMinWidth(150);
+    state.setMinWidth(170);
+    active.setMinWidth(125);
+    favorite.setMinWidth(55);
     tunnelTable.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
     tunnelTable.setOnMouseClicked(
         event -> {
@@ -1309,7 +1340,7 @@ public final class ShellController implements AutoCloseable {
     assignGroup.setOnAction(event -> bulkAssignGroup());
     removeGroup.setOnAction(event -> bulkRemoveGroup());
     tunnelSearch = new TextField();
-    tunnelSearch.setPromptText("Filtrar túneles por nombre o destino");
+    tunnelSearch.setPromptText("Filtrar nombre o destino");
     tunnelProjectFilter = new ComboBox<>();
     tunnelProjectFilter.setPromptText("Proyecto");
     tunnelEnvironmentFilter = new ComboBox<>();
@@ -1322,6 +1353,7 @@ public final class ShellController implements AutoCloseable {
                 com.ssh.tunnelmanager.domain.tunnel.ActualState.values()));
     tunnelStateFilter.setPromptText("Estado");
     tunnelTagFilter = new ListView<>();
+    tunnelTagFilter.setPlaceholder(new Label("Etiquetas"));
     tunnelTagFilter
         .getSelectionModel()
         .setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
@@ -1335,15 +1367,15 @@ public final class ShellController implements AutoCloseable {
                 setText(empty || item == null ? null : item.name());
               }
             });
-    HBox filters =
-        new HBox(
-            8,
+    FlowPane filters =
+        flowPane(
             tunnelSearch,
             tunnelProjectFilter,
             tunnelEnvironmentFilter,
             tunnelGroupFilter,
             tunnelStateFilter,
             tunnelTagFilter);
+    filters.getStyleClass().add("filter-bar");
     tunnelSearch.textProperty().addListener((obs, old, value) -> applyTunnelFilters());
     tunnelProjectFilter.valueProperty().addListener((obs, old, value) -> applyTunnelFilters());
     tunnelEnvironmentFilter.valueProperty().addListener((obs, old, value) -> applyTunnelFilters());
@@ -1354,17 +1386,10 @@ public final class ShellController implements AutoCloseable {
         .getSelectedItems()
         .addListener(
             (javafx.collections.ListChangeListener<TagRecord>) change -> applyTunnelFilters());
-    HBox actions = new HBox(8, add, edit, duplicate, remove, test, start, stop, retry, details);
-    HBox bulkActions =
-        new HBox(
-            8,
-            bulkStart,
-            bulkStop,
-            favoriteOn,
-            favoriteOff,
-            assignProject,
-            assignGroup,
-            removeGroup);
+    FlowPane actions = flowPane(add, edit, duplicate, remove, test, start, stop, retry, details);
+    FlowPane bulkActions =
+        flowPane(
+            bulkStart, bulkStop, favoriteOn, favoriteOff, assignProject, assignGroup, removeGroup);
     contentContainer.getChildren().addAll(filters, tunnelTable, actions, bulkActions);
     refreshTunnels(tunnelTable);
   }
@@ -2160,14 +2185,34 @@ public final class ShellController implements AutoCloseable {
     return combo.getValue() == null ? null : combo.getValue().id();
   }
 
+  private static FlowPane flowPane(Node... children) {
+    FlowPane pane = new FlowPane(8, 8);
+    pane.getStyleClass().add("action-bar");
+    pane.setMaxWidth(Double.MAX_VALUE);
+    pane.getChildren().addAll(children);
+    return pane;
+  }
+
   private static GridPane formGrid(Object... values) {
     GridPane grid = new GridPane();
+    grid.getStyleClass().add("form-grid");
     grid.setHgap(10);
     grid.setVgap(8);
     grid.setPadding(new Insets(12));
+    ColumnConstraints labels = new ColumnConstraints();
+    labels.setMinWidth(120);
+    labels.setPrefWidth(170);
+    ColumnConstraints controls = new ColumnConstraints();
+    controls.setHgrow(Priority.ALWAYS);
+    controls.setFillWidth(true);
+    grid.getColumnConstraints().addAll(labels, controls);
     for (int index = 0; index < values.length; index += 2) {
       grid.add(new Label((String) values[index]), 0, index / 2);
-      grid.add((Node) values[index + 1], 1, index / 2);
+      Node control = (Node) values[index + 1];
+      if (control instanceof javafx.scene.layout.Region region) {
+        region.setMaxWidth(Double.MAX_VALUE);
+      }
+      grid.add(control, 1, index / 2);
     }
     return grid;
   }

@@ -1,6 +1,18 @@
 .root {
+    -app-accent: #245fd1;
+    -app-border: #c7cedb;
+    -app-muted: #526071;
+    -app-placeholder: #667085;
+    -app-hover: #e9eefb;
+    -app-focus: #245fd1;
+    -app-selection: #2f6fed;
+    -app-error: #b42318;
+    -app-warning: #b54708;
+    -app-disabled-text: #667085;
     -fx-background: #f7f8fa;
     -fx-panel-background: #ffffff;
     -fx-text-base-color: #172033;
+    -fx-text-inner-color: #172033;
     -fx-control-inner-background: #ffffff;
+    -fx-control-inner-background-alt: #f7f8fa;
 }

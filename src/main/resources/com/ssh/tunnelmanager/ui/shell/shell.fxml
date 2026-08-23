@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -11,7 +12,7 @@
             fx:controller="com.ssh.tunnelmanager.ui.shell.ShellController"
             styleClass="app-shell">
     <left>
-        <VBox prefWidth="230.0" spacing="12.0" styleClass="navigation-pane">
+        <VBox minWidth="190.0" prefWidth="230.0" maxWidth="280.0" spacing="12.0" styleClass="navigation-pane">
             <padding>
                 <Insets bottom="20.0" left="16.0" right="16.0" top="20.0" />
             </padding>
@@ -21,11 +22,15 @@
     </left>
     <center>
         <StackPane styleClass="content-pane">
-            <VBox fx:id="contentContainer" maxWidth="920.0" spacing="10.0">
-                <Label fx:id="sectionTitle" styleClass="section-title" text="%navigation.home" />
-                <Label fx:id="sectionDescription" wrapText="true"
-                       text="%home.description" />
-            </VBox>
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="content-scroll">
+                <content>
+                    <VBox fx:id="contentContainer" spacing="10.0" styleClass="content-container">
+                        <Label fx:id="sectionTitle" styleClass="section-title" text="%navigation.home" />
+                        <Label fx:id="sectionDescription" wrapText="true"
+                               text="%home.description" />
+                    </VBox>
+                </content>
+            </ScrollPane>
         </StackPane>
     </center>
 </BorderPane>

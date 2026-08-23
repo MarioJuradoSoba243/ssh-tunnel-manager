@@ -1,7 +1,18 @@
 .root {
-    -app-border: #3c4657;
+    -app-accent: #76a7ff;
+    -app-border: #4b586b;
+    -app-muted: #b1bdd0;
+    -app-placeholder: #aab7c9;
+    -app-hover: #303b4d;
+    -app-focus: #8bb5ff;
+    -app-selection: #3d73d9;
+    -app-error: #ff8f8f;
+    -app-warning: #ffc078;
+    -app-disabled-text: #aab7c9;
     -fx-background: #171b24;
     -fx-panel-background: #202632;
     -fx-text-base-color: #edf1f7;
+    -fx-text-inner-color: #edf1f7;
     -fx-control-inner-background: #252d3a;
+    -fx-control-inner-background-alt: #202632;
 }
