@@ -1,0 +1,9 @@
+.root {
+    -fx-base: #f5f6f8;
+    -fx-background: #ffffff;
+    -fx-text-base-color: #202124;
+}
+
+.navigation {
+    -fx-background-color: #eef1f5;
+}

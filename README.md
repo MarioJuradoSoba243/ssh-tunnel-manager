@@ -4,7 +4,7 @@ Aplicación de escritorio Windows 11 para gestionar túneles SSH Local Port Forw
 
 ## Estado del proyecto
 
-**Definición completada; implementación todavía no iniciada.**
+**Fase 1 en implementación: bootstrap Maven y shell JavaFX disponibles.**
 
 El proyecto utiliza OpenSpec como fuente de verdad. El cambio inicial está en:
 
@@ -100,11 +100,16 @@ El detalle completo está en:
 openspec/changes/create-ssh-tunnel-manager/tasks.md
 ```
 
-## Build
+## Requisitos de desarrollo
 
-El proyecto Maven todavía no existe: se creará en la Fase 1 de implementación.
+- JDK 25.
+- Maven no es necesario: el repositorio incluye Maven Wrapper 3.9.10.
+- En Linux, un servidor gráfico o `xvfb-run` para el smoke test JavaFX de `verify`.
+- Windows 11 x64 y WiX Toolset disponible en el runner para generar el instalador.
 
-Una vez completado el bootstrap, los comandos canónicos deberán ser equivalentes a:
+## Build y tests
+
+En Windows:
 
 ```powershell
 .\mvnw.cmd spotless:apply
@@ -112,7 +117,39 @@ Una vez completado el bootstrap, los comandos canónicos deberán ser equivalent
 .\mvnw.cmd verify
 ```
 
+En Linux/macOS se utiliza `./mvnw`. En un entorno Linux sin pantalla:
+
+```bash
+./mvnw spotless:apply
+xvfb-run --auto-servernum ./mvnw verify
+```
+
+Surefire ejecuta los tests unitarios `*Test`; Failsafe ejecuta los integration tests
+`*IT`. `verify` también comprueba Spotless, las reglas ArchUnit y genera el informe
+JaCoCo en `target/site/jacoco/`, sin imponer un umbral global.
+
+Para ejecutar la aplicación durante el desarrollo:
+
+```powershell
+.\mvnw.cmd javafx:run
+```
+
 Los cambios relacionados con SSH deberán ejecutar además los integration tests correspondientes.
+El motor SSH todavía no forma parte del proyecto porque continúa sujeto al spike de Fase 2.
+
+## Packaging Windows
+
+El script de packaging usa `jpackage` del JDK 25 y acepta los targets `app-image`,
+`installer`, `portable` y `all`:
+
+```powershell
+.\scripts\package-windows.ps1 -Target all
+```
+
+Los resultados se escriben en `target/distribution/`. El ZIP portable contiene una
+application image y, por tanto, su propio runtime. El workflow de GitHub Actions
+ejecuta en Windows tanto el build portable como el instalador. Los paquetes Windows
+no se generan mediante cross-compilation desde Linux.
 
 Los cambios de distribución deberán validar `jpackage` en Windows.
 

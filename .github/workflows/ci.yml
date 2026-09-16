@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    name: Compile, format, unit, integration and architecture tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Maven verify
+        run: xvfb-run --auto-servernum ./mvnw -B verify
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+
+  windows-package:
+    name: Windows jpackage smoke build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Verify
+        run: .\mvnw.cmd -B verify
+      - name: Build application image and portable ZIP
+        shell: pwsh
+        run: .\scripts\package-windows.ps1 -Target portable
+      - name: Build installer
+        shell: pwsh
+        run: .\scripts\package-windows.ps1 -Target installer
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: target/distribution/

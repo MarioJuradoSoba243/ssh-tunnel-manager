@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" styleClass="app-shell">
+    <left>
+        <VBox spacing="8" styleClass="navigation">
+            <padding><Insets top="20" right="16" bottom="20" left="16" /></padding>
+            <Label text="SSH Tunnel Manager" styleClass="app-title" />
+            <Button text="Inicio" onAction="#showHome" maxWidth="Infinity" />
+            <Button text="Túneles" onAction="#showTunnels" maxWidth="Infinity" />
+            <Button text="Grupos" onAction="#showGroups" maxWidth="Infinity" />
+            <Button text="Hosts SSH" onAction="#showHosts" maxWidth="Infinity" />
+            <Button text="Organización" onAction="#showOrganization" maxWidth="Infinity" />
+            <Button text="Ajustes" onAction="#showSettings" maxWidth="Infinity" />
+        </VBox>
+    </left>
+    <center>
+        <Label fx:id="sectionTitle" text="Inicio" styleClass="section-title" BorderPane.alignment="CENTER" />
+    </center>
+</BorderPane>

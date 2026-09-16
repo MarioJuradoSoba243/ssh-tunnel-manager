@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Properties>
+        <Property name="logDir">${sys:sshTunnelManager.logDir:-${sys:user.home}/.ssh-tunnel-manager/logs}</Property>
+        <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n</Property>
+    </Properties>
+    <Appenders>
+        <RollingFile name="RollingFile" fileName="${logDir}/ssh-tunnel-manager.log"
+                     filePattern="${logDir}/ssh-tunnel-manager-%i.log.gz">
+            <PatternLayout pattern="${pattern}" />
+            <Policies><SizeBasedTriggeringPolicy size="10 MB" /></Policies>
+            <DefaultRolloverStrategy max="10" fileIndex="min" />
+        </RollingFile>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO"><AppenderRef ref="RollingFile" /></Root>
+    </Loggers>
+</Configuration>

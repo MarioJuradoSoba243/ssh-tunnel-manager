@@ -9,26 +9,31 @@
 
 ## 1. Bootstrap técnico y build base
 
-- [ ] 1.1 Crear el proyecto Maven único con Java 25 y la estructura de packages `domain`, `application`, `infrastructure` y `ui`.
+- [x] 1.1 Crear el proyecto Maven único con Java 25 y la estructura de packages `domain`, `application`, `infrastructure` y `ui`.
 - [ ] 1.2 Añadir Maven Wrapper y verificar `mvnw.cmd --version` en Windows.
-- [ ] 1.3 Configurar JavaFX y crear una aplicación mínima que abra la ventana principal.
-- [ ] 1.4 Crear `ApplicationBootstrap` con constructor injection manual y sin contenedor DI.
-- [ ] 1.5 Añadir JUnit 5, AssertJ, Mockito y ArchUnit como dependencias de test.
-- [ ] 1.6 Añadir SLF4J + Log4j2 con nivel `INFO` por defecto y configuración inicial de rolling files.
-- [ ] 1.7 Añadir Spotless + google-java-format y configurar su comprobación en el build.
-- [ ] 1.8 Añadir JaCoCo para generar informes de cobertura sin imponer un porcentaje global.
-- [ ] 1.9 Configurar Maven Surefire para unit tests y Failsafe para integration tests `*IT`.
-- [ ] 1.10 Crear reglas ArchUnit iniciales para proteger las fronteras definidas en `design.md`.
-- [ ] 1.11 Crear el shell JavaFX mínimo con navegación vacía a Inicio, Túneles, Grupos, Hosts SSH, Organización y Ajustes.
-- [ ] 1.12 Añadir `base.css`, `light.css` y `dark.css` con una primera infraestructura de tema.
-- [ ] 1.13 Crear una prueba smoke de arranque JavaFX.
-- [ ] 1.14 Crear GitHub Actions para compile, format check, unit tests, SQLite-independent tests y ArchUnit.
-- [ ] 1.15 Crear un primer job Windows de `jpackage` que produzca una application image mínima.
+- [x] 1.3 Configurar JavaFX y crear una aplicación mínima que abra la ventana principal.
+- [x] 1.4 Crear `ApplicationBootstrap` con constructor injection manual y sin contenedor DI.
+- [x] 1.5 Añadir JUnit 5, AssertJ, Mockito y ArchUnit como dependencias de test.
+- [x] 1.6 Añadir SLF4J + Log4j2 con nivel `INFO` por defecto y configuración inicial de rolling files.
+- [x] 1.7 Añadir Spotless + google-java-format y configurar su comprobación en el build.
+- [x] 1.8 Añadir JaCoCo para generar informes de cobertura sin imponer un porcentaje global.
+- [x] 1.9 Configurar Maven Surefire para unit tests y Failsafe para integration tests `*IT`.
+- [x] 1.10 Crear reglas ArchUnit iniciales para proteger las fronteras definidas en `design.md`.
+- [x] 1.11 Crear el shell JavaFX mínimo con navegación vacía a Inicio, Túneles, Grupos, Hosts SSH, Organización y Ajustes.
+- [x] 1.12 Añadir `base.css`, `light.css` y `dark.css` con una primera infraestructura de tema.
+- [x] 1.13 Crear una prueba smoke de arranque JavaFX.
+- [x] 1.14 Crear GitHub Actions para compile, format check, unit tests, SQLite-independent tests y ArchUnit.
+- [x] 1.15 Crear un primer job Windows de `jpackage` que produzca una application image mínima.
 - [ ] 1.16 Generar un instalador Windows mínimo mediante `jpackage` y verificar que no requiere un JRE/JDK externo.
 - [ ] 1.17 Generar un ZIP portable mínimo a partir de la application image.
-- [ ] 1.18 Documentar en `README.md` los comandos de build/test/package realmente disponibles tras el bootstrap.
-- [ ] 1.19 Ejecutar Spotless y `.\mvnw.cmd verify`.
+- [x] 1.18 Documentar en `README.md` los comandos de build/test/package realmente disponibles tras el bootstrap.
+- [x] 1.19 Ejecutar Spotless y `.\mvnw.cmd verify`.
 - [ ] 1.20 Marcar la Fase 1 completada solo si CI y los smoke builds de packaging son reproducibles.
+
+Notas de validación de Fase 1 (2026-08-17): Spotless y `mvnw verify` pasan con Java 25
+en Linux; una application image equivalente de `jpackage` se genera y arranca en Linux.
+Quedan pendientes la ejecución real de `mvnw.cmd --version`, CI y los artefactos
+instalador/portable en Windows 11 x64, por lo que 1.2, 1.16, 1.17 y el gate 1.20 siguen abiertos.
 
 ## 2. Spike obligatorio del motor SSH
 
