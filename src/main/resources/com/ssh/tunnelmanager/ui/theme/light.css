@@ -1,9 +1,22 @@
 .root {
+    -app-background: #f5f7fb;
+    -app-surface: #ffffff;
+    -app-surface-secondary: #ffffff;
+    -app-surface-hover: #eef3ff;
+    -app-surface-selected: #3168d8;
+    -app-border-subtle: #d9dfeb;
+    -app-border-strong: #aab6c9;
+    -app-text-primary: #172033;
+    -app-text-secondary: #526071;
+    -app-text-muted: #667085;
+    -app-accent-hover: #1f55b8;
+    -app-accent-pressed: #17468f;
+    -app-success: #16855b;
     -app-accent: #245fd1;
     -app-border: #c7cedb;
     -app-muted: #526071;
     -app-placeholder: #667085;
-    -app-hover: #e9eefb;
+    -app-hover: #eef3ff;
     -app-focus: #245fd1;
     -app-selection: #2f6fed;
     -app-error: #b42318;

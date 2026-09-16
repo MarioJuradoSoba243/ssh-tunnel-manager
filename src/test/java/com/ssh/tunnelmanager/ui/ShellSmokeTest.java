@@ -26,6 +26,8 @@ class ShellSmokeTest {
     assertThat(scene.getWidth()).isEqualTo(1024);
     assertThat(scene.getHeight()).isEqualTo(700);
     assertThat(scene.getRoot().getStyleClass()).contains("app-shell");
+    assertThat(scene.lookup(".top-bar")).isNotNull();
+    assertThat(scene.lookup(".search-button")).isNotNull();
     assertThat(scene.getStylesheets())
         .containsExactly(
             "/com/ssh/tunnelmanager/ui/theme/base.css",

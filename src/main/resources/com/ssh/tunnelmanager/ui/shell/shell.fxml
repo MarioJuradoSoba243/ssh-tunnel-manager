@@ -3,8 +3,10 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -16,21 +18,35 @@
             <padding>
                 <Insets bottom="20.0" left="16.0" right="16.0" top="20.0" />
             </padding>
-            <Label styleClass="application-title" text="%app.title" />
-            <ListView fx:id="navigationList" accessibleText="%navigation.accessible" VBox.vgrow="ALWAYS" />
+            <VBox spacing="2.0" styleClass="brand-block">
+                <Label styleClass="application-eyebrow" text="SSH WORKSPACE" />
+                <Label styleClass="application-title" text="%app.title" />
+            </VBox>
+            <ListView fx:id="navigationList" accessibleText="%navigation.accessible" styleClass="navigation-list" VBox.vgrow="ALWAYS" />
+            <VBox spacing="2.0" styleClass="navigation-footer">
+                <Label text="Local Port Forwarding" />
+                <Label text="v1.0.0 · Windows" />
+            </VBox>
         </VBox>
     </left>
     <center>
-        <StackPane styleClass="content-pane">
-            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="content-scroll">
-                <content>
-                    <VBox fx:id="contentContainer" spacing="10.0" styleClass="content-container">
-                        <Label fx:id="sectionTitle" styleClass="section-title" text="%navigation.home" />
-                        <Label fx:id="sectionDescription" wrapText="true"
-                               text="%home.description" />
-                    </VBox>
-                </content>
-            </ScrollPane>
-        </StackPane>
+        <VBox styleClass="main-column">
+            <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="top-bar">
+                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                    <Label fx:id="sectionTitle" styleClass="section-title" text="%navigation.home" />
+                    <Label fx:id="sectionDescription" styleClass="section-description" wrapText="true"
+                           text="%home.description" />
+                </VBox>
+                <Button fx:id="globalSearchButton" mnemonicParsing="false" styleClass="search-button" text="Buscar en el espacio de trabajo" />
+                <Label styleClass="shortcut-hint" text="Ctrl+K" />
+            </HBox>
+            <StackPane VBox.vgrow="ALWAYS" styleClass="content-pane">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="content-scroll">
+                    <content>
+                        <VBox fx:id="contentContainer" spacing="10.0" styleClass="content-container" />
+                    </content>
+                </ScrollPane>
+            </StackPane>
+        </VBox>
     </center>
 </BorderPane>

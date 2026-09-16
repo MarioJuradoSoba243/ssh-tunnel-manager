@@ -21,6 +21,10 @@ class UiThemeCssTest {
               "-app-hover",
               "-app-focus",
               "-app-selection",
+              "-app-surface",
+              "-app-surface-hover",
+              "-app-text-primary",
+              "-app-accent-hover",
               "-app-disabled-text",
               "-fx-text-inner-color",
               "-fx-control-inner-background-alt");
@@ -44,7 +48,13 @@ class UiThemeCssTest {
             ".menu-button",
             ".tag-chip",
             ".settings-section",
-            ".scroll-bar .thumb");
+            ".scroll-bar .thumb",
+            ".metric-card",
+            ".button.primary",
+            ".button.secondary",
+            ".button.danger",
+            ".navigation-pane .list-cell:selected",
+            ".top-bar");
   }
 
   private static String read(String resource) throws IOException {

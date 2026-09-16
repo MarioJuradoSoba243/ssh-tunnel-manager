@@ -86,6 +86,7 @@ public final class ShellController implements AutoCloseable {
   @FXML private Label sectionTitle;
   @FXML private Label sectionDescription;
   @FXML private VBox contentContainer;
+  @FXML private Button globalSearchButton;
 
   private final ShellViewModel shellViewModel;
   private final ApplicationComponents components;
@@ -190,9 +191,18 @@ public final class ShellController implements AutoCloseable {
               @Override
               protected void updateItem(NavigationItem item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : UiMessages.get("navigation." + item.id()));
+                if (empty || item == null) {
+                  setText(null);
+                  setGraphic(null);
+                  return;
+                }
+                setText(UiMessages.get("navigation." + item.id()));
+                Label icon = new Label(navigationIcon(item.id()));
+                icon.getStyleClass().add("navigation-icon");
+                setGraphic(icon);
               }
             });
+    globalSearchButton.setOnAction(event -> showGlobalSearch());
     navigationList
         .getSelectionModel()
         .selectedItemProperty()
@@ -254,6 +264,18 @@ public final class ShellController implements AutoCloseable {
         .ifPresent(item -> navigationList.getSelectionModel().select(item));
   }
 
+  private static String navigationIcon(String id) {
+    return switch (id) {
+      case "home" -> "⌂";
+      case "tunnels" -> "⇄";
+      case "groups" -> "☷";
+      case "hosts" -> "⌁";
+      case "organization" -> "▦";
+      case "settings" -> "⚙";
+      default -> "•";
+    };
+  }
+
   private void showSection(NavigationItem item) {
     stopStatusRefresh();
     editingTunnel = false;
@@ -276,16 +298,23 @@ public final class ShellController implements AutoCloseable {
   private void showHome() {
     sectionDescription.setText(UiMessages.get("home.description.active"));
     if (hub == null) return;
-    Label summary = new Label("Cargando resumen…");
+    Label summary = new Label("Resumen del espacio de trabajo");
+    summary.getStyleClass().add("section-heading");
     Label emptyFlow = new Label();
     ListView<String> favorites = new ListView<>();
     ListView<String> recent = new ListView<>();
     ListView<String> active = new ListView<>();
+    List.of(favorites, recent, active).forEach(list -> list.getStyleClass().add("dashboard-list"));
+    favorites.setPlaceholder(new Label("Aún no hay favoritos"));
+    recent.setPlaceholder(new Label("Aún no hay actividad reciente"));
+    active.setPlaceholder(new Label("No hay túneles activos"));
     Button stopAll = new Button("Detener todos");
+    buttonStyle(stopAll, "danger");
     stopAll.setOnAction(event -> stopAllTunnels());
-    Button open = new Button("Abiertos");
-    Button reconnecting = new Button("Reconectando");
-    Button errors = new Button("Errores");
+    Button configured = metricCard("Configurados\n—", "metric-neutral");
+    Button open = metricCard("Abiertos\n—", "metric-success");
+    Button reconnecting = metricCard("Reconectando\n—", "metric-warning");
+    Button errors = metricCard("Errores\n—", "metric-danger");
     open.setOnAction(
         event -> navigateToTunnelState(com.ssh.tunnelmanager.domain.tunnel.ActualState.OPEN));
     reconnecting.setOnAction(
@@ -298,12 +327,12 @@ public final class ShellController implements AutoCloseable {
             10,
             summary,
             emptyFlow,
-            flowPane(open, reconnecting, errors),
-            new Label("Favoritos"),
+            flowPane(configured, open, reconnecting, errors),
+            sectionHeading("Favoritos"),
             favorites,
-            new Label("Recientes"),
+            sectionHeading("Recientes"),
             recent,
-            new Label("Túneles activos"),
+            sectionHeading("Túneles activos"),
             active,
             stopAll);
     VBox.setVgrow(favorites, Priority.NEVER);
@@ -324,14 +353,13 @@ public final class ShellController implements AutoCloseable {
           Platform.runLater(
               () -> {
                 summary.setText(
-                    "Configurados: "
+                    "Resumen del espacio de trabajo · "
                         + snapshot.configuredTunnels()
-                        + " · Abiertos: "
-                        + snapshot.openTunnels()
-                        + " · Reconectando: "
-                        + snapshot.reconnectingTunnels()
-                        + " · Errores: "
-                        + snapshot.errorTunnels());
+                        + " túneles configurados");
+                configured.setText("Configurados\n" + snapshot.configuredTunnels());
+                open.setText("Abiertos\n" + snapshot.openTunnels());
+                reconnecting.setText("Reconectando\n" + snapshot.reconnectingTunnels());
+                errors.setText("Errores\n" + snapshot.errorTunnels());
                 emptyFlow.setText(
                     snapshot.configuredTunnels() == 0
                         ? "Primera ejecución: crea un Host SSH, después un túnel y, si lo necesitas, un grupo."
@@ -361,6 +389,23 @@ public final class ShellController implements AutoCloseable {
                   components.startGroup().execute(item.id());
               });
         });
+  }
+
+  private static Button metricCard(String text, String styleClass) {
+    Button card = new Button(text);
+    card.getStyleClass().addAll("metric-card", styleClass);
+    card.setMinWidth(132);
+    card.setPrefWidth(160);
+    card.setMaxWidth(Double.MAX_VALUE);
+    card.setMinHeight(68);
+    card.setWrapText(true);
+    return card;
+  }
+
+  private static Label sectionHeading(String text) {
+    Label heading = new Label(text);
+    heading.getStyleClass().add("section-heading");
+    return heading;
   }
 
   private void stopAllTunnels() {
@@ -879,6 +924,9 @@ public final class ShellController implements AutoCloseable {
     Button add = new Button("Nuevo");
     Button edit = new Button("Editar");
     Button remove = new Button("Eliminar");
+    buttonStyle(add, "primary");
+    buttonStyle(edit, "secondary");
+    buttonStyle(remove, "danger");
     Runnable refresh =
         () ->
             workers.submit(
@@ -1022,25 +1070,28 @@ public final class ShellController implements AutoCloseable {
         });
     Button add = new Button("Nuevo grupo");
     Button edit = new Button("Editar");
-    Button duplicate = new Button("Duplicar");
-    Button remove = new Button("Eliminar");
     Button start = new Button("Iniciar grupo");
     Button stop = new Button("Detener grupo");
+    MenuItem duplicate = new MenuItem("Duplicar");
+    MenuItem remove = new MenuItem("Eliminar");
+    buttonStyle(add, "primary");
+    buttonStyle(edit, "secondary");
+    buttonStyle(start, "primary");
     add.setOnAction(event -> openGroupEditor(null));
     edit.setOnAction(event -> editSelectedGroup());
     duplicate.setOnAction(event -> duplicateSelectedGroup());
     remove.setOnAction(event -> deleteSelectedGroup());
     start.setOnAction(event -> operateSelectedGroup(groups::start));
     stop.setOnAction(event -> operateSelectedGroup(groups::stop));
+    MenuButton more = new MenuButton("Más");
+    more.getItems().addAll(duplicate, new SeparatorMenuItem(), remove);
     groupTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     groupTable.setPrefHeight(300);
     groupTable.setMaxHeight(420);
     name.setMinWidth(180);
     members.setMinWidth(90);
     state.setMinWidth(180);
-    contentContainer
-        .getChildren()
-        .addAll(groupTable, flowPane(add, edit, duplicate, remove, start, stop));
+    contentContainer.getChildren().addAll(groupTable, flowPane(add, edit, start, stop, more));
     refreshGroups(groupTable);
     statusRefresh =
         new Timeline(
@@ -1183,6 +1234,8 @@ public final class ShellController implements AutoCloseable {
     choices.setItems(filtered);
     Button save = new Button("Guardar");
     Button cancel = new Button("Cancelar");
+    buttonStyle(save, "primary");
+    buttonStyle(cancel, "ghost");
     save.setOnAction(
         event ->
             saveGroupEditor(existing, name, rows, project, environment, tagSelection, favorite));
@@ -1282,13 +1335,17 @@ public final class ShellController implements AutoCloseable {
     FlowPane actions = flowPane();
     Button add = new Button("Nuevo host");
     Button edit = new Button("Editar");
-    Button remove = new Button("Eliminar");
-    Button forget = new Button("Eliminar confianza");
+    MenuItem remove = new MenuItem("Eliminar");
+    MenuItem forget = new MenuItem("Eliminar confianza");
+    buttonStyle(add, "primary");
+    buttonStyle(edit, "secondary");
     add.setOnAction(event -> openHostEditor(table, null));
     edit.setOnAction(event -> openHostEditor(table, table.getSelectionModel().getSelectedItem()));
     remove.setOnAction(event -> deleteHost(table.getSelectionModel().getSelectedItem(), table));
     forget.setOnAction(event -> forgetHostKey(table.getSelectionModel().getSelectedItem(), table));
-    actions.getChildren().addAll(add, edit, remove, forget);
+    MenuButton more = new MenuButton("Más");
+    more.getItems().addAll(remove, new SeparatorMenuItem(), forget);
+    actions.getChildren().addAll(add, edit, more);
     contentContainer.getChildren().addAll(table, actions);
     refreshHosts(table);
   }
@@ -1339,6 +1396,10 @@ public final class ShellController implements AutoCloseable {
     Button edit = new Button("Editar");
     Button start = new Button("Iniciar");
     Button stop = new Button("Detener");
+    buttonStyle(add, "primary");
+    buttonStyle(edit, "secondary");
+    buttonStyle(start, "primary");
+    buttonStyle(stop, "ghost");
     MenuItem duplicate = new MenuItem("Duplicar");
     MenuItem remove = new MenuItem("Eliminar");
     MenuItem test = new MenuItem("Probar conexión");
@@ -1883,6 +1944,8 @@ public final class ShellController implements AutoCloseable {
     validation.getStyleClass().add("error-text");
     Button saveButton = new Button("Guardar");
     Button cancelButton = new Button("Cancelar");
+    buttonStyle(saveButton, "primary");
+    buttonStyle(cancelButton, "ghost");
     FlowPane actions = flowPane(saveButton, cancelButton);
     VBox editor = new VBox(12, tabs, validation, actions);
     VBox.setVgrow(tabs, Priority.ALWAYS);
@@ -2240,6 +2303,10 @@ public final class ShellController implements AutoCloseable {
     pane.setMaxWidth(Double.MAX_VALUE);
     pane.getChildren().addAll(children);
     return pane;
+  }
+
+  private static void buttonStyle(Button button, String variant) {
+    button.getStyleClass().add(variant);
   }
 
   private VBox tagFilterBox() {
