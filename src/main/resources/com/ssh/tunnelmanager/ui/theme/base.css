@@ -111,6 +111,13 @@
     -fx-border-width: 1px;
 }
 
+.navigation-pane .list-cell:empty,
+.navigation-pane .list-cell:empty:hover,
+.navigation-pane .list-cell:empty:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
 .navigation-icon {
     -fx-min-width: 20px;
     -fx-alignment: CENTER;
@@ -326,8 +333,28 @@
 .command-palette .list-view { -fx-min-height: 260px; }
 
 .density-compact .table-row-cell,
-.density-compact .list-cell { -fx-cell-size: 30px; }
-.density-compact .button { -fx-min-height: 30px; -fx-padding: 6px 10px; }
+.density-compact .list-cell { -fx-cell-size: 32px; }
+.density-compact .button,
+.density-compact .combo-box-base,
+.density-compact .choice-box,
+.density-compact .date-picker,
+.density-compact .spinner,
+.density-compact .text-field,
+.density-compact .password-field,
+.density-compact .menu-button {
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 6px 10px;
+}
+.density-compact .combo-box-base > .list-cell,
+.density-compact .combo-box-base > .arrow-button,
+.density-compact .choice-box > .label,
+.density-compact .spinner .text-field {
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 5px 8px;
+}
+.density-compact .combo-box-popup .list-cell { -fx-cell-size: 32px; }
 .density-compact .content-pane { -fx-padding: 12px 18px 18px 18px; }
 
 .button.icon {

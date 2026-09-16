@@ -102,12 +102,14 @@ public final class ShellController implements AutoCloseable {
   private HubViewModel hub;
   private TableView<TunnelRecord> tunnelTable;
   private TableView<SshHostRecord> hostTable;
+  private Node tunnelView;
   private VBox tunnelDetailPanel;
   private FlowPane tunnelFilterChips;
   private VBox contextualSelectionBar;
   private Label selectionSummary;
-  private javafx.collections.ObservableList<TunnelRecord> tunnelRows;
-  private FilteredList<TunnelRecord> filteredTunnelRows;
+  private final TunnelViewState tunnelViewState = new TunnelViewState();
+  private final javafx.collections.ObservableList<TunnelRecord> tunnelRows = tunnelViewState.rows();
+  private final FilteredList<TunnelRecord> filteredTunnelRows = tunnelViewState.filteredRows();
   private TextField tunnelSearch;
   private ComboBox<ProjectRecord> tunnelProjectFilter;
   private ComboBox<EnvironmentRecord> tunnelEnvironmentFilter;
@@ -207,8 +209,12 @@ public final class ShellController implements AutoCloseable {
                 if (empty || item == null) {
                   setText(null);
                   setGraphic(null);
+                  setMouseTransparent(true);
+                  setFocusTraversable(false);
                   return;
                 }
+                setMouseTransparent(false);
+                setFocusTraversable(true);
                 setText(UiMessages.get("navigation." + item.id()));
                 Label icon = new Label(navigationIcon(item.id()));
                 icon.getStyleClass().add("navigation-icon");
@@ -1505,6 +1511,11 @@ public final class ShellController implements AutoCloseable {
     sectionDescription.setText(
         "Local Port Forwarding: configura, prueba, inicia, detén y reintenta túneles individuales.");
     if (tunnels == null) return;
+    if (tunnelView != null) {
+      contentContainer.getChildren().add(tunnelView);
+      refreshTunnels(tunnelTable);
+      return;
+    }
     tunnelTable = new TableView<>();
     TableColumn<TunnelRecord, String> name = new TableColumn<>("Nombre");
     name.setCellValueFactory(
@@ -1722,6 +1733,11 @@ public final class ShellController implements AutoCloseable {
     split.setDividerPositions(0.70);
     split.getStyleClass().add("tunnel-master-detail");
     VBox.setVgrow(split, Priority.ALWAYS);
+    tunnelView = split;
+    javafx.collections.transformation.SortedList<TunnelRecord> sorted =
+        new javafx.collections.transformation.SortedList<>(filteredTunnelRows);
+    sorted.comparatorProperty().bind(tunnelTable.comparatorProperty());
+    tunnelTable.setItems(sorted);
     contentContainer.getChildren().add(split);
     refreshTunnels(tunnelTable);
   }
@@ -1841,8 +1857,10 @@ public final class ShellController implements AutoCloseable {
     if (selected == null) return;
     if ("hosts".equals(selected.id())) showHosts();
     if ("tunnels".equals(selected.id())) {
-      if (tunnelTable != null) tunnelTable.refresh();
-      else showTunnels();
+      if (tunnelTable != null) {
+        tunnelTable.refresh();
+        refreshTunnels(tunnelTable);
+      } else showTunnels();
     }
     if ("home".equals(selected.id()) && hub != null) showHome();
     if ("groups".equals(selected.id())) {
@@ -1866,15 +1884,7 @@ public final class ShellController implements AutoCloseable {
           Platform.runLater(
               () -> {
                 if (table != tunnelTable) return;
-                if (tunnelRows == null) {
-                  tunnelRows = FXCollections.observableArrayList();
-                  filteredTunnelRows = new FilteredList<>(tunnelRows, ignored -> true);
-                  javafx.collections.transformation.SortedList<TunnelRecord> sorted =
-                      new javafx.collections.transformation.SortedList<>(filteredTunnelRows);
-                  sorted.comparatorProperty().bind(table.comparatorProperty());
-                  table.setItems(sorted);
-                }
-                tunnelRows.setAll(values);
+                tunnelViewState.replaceAll(values);
                 if (components != null) {
                   tunnelProjectFilter.getItems().setAll(components.projectRepository().findAll());
                   tunnelEnvironmentFilter
@@ -1895,7 +1905,6 @@ public final class ShellController implements AutoCloseable {
   }
 
   private void applyTunnelFilters() {
-    if (filteredTunnelRows == null) return;
     String query = tunnelSearch == null ? "" : tunnelSearch.getText().trim().toLowerCase();
     UUID projectId =
         tunnelProjectFilter.getValue() == null ? null : tunnelProjectFilter.getValue().id();
@@ -1926,7 +1935,7 @@ public final class ShellController implements AutoCloseable {
     if (tunnelTable != null) {
       tunnelTable.setPlaceholder(
           new Label(
-              tunnelRows == null || tunnelRows.isEmpty()
+              tunnelRows.isEmpty()
                   ? "Aún no hay túneles. Usa Nuevo túnel para crear el primero."
                   : "Ningún túnel coincide con estos filtros."));
     }
