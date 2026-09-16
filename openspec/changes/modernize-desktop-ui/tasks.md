@@ -62,3 +62,16 @@
 - [x] 7.4 Añadir pruebas de regresión para estado de lista, CSS de sidebar y
   legibilidad estructural de Compact.
 - [ ] 7.5 Repetir la auditoría visual renderizada en Windows; permanece manual.
+
+## 8. Corrección UI/UX basada en evidencia
+
+- [x] 8.1 Unificar los diálogos técnicos con cierre explícito, contenido
+  desplazable y tamaño responsivo para detalles y errores.
+- [x] 8.2 Sustituir la lista permanente de etiquetas por chips removibles y un
+  selector compacto compartido por túneles y grupos.
+- [x] 8.3 Centrar favoritos y normalizar escala, área de interacción, tooltip y
+  accesibilidad de las acciones rápidas de tabla.
+- [x] 8.4 Añadir cobertura de CSS y comportamiento para los contratos de la
+  regresión UI/UX y registrar la guía del sistema visual.
+- [ ] 8.5 Repetir la auditoría visual renderizada en Windows en claro/oscuro y
+  100/125/150/200 %; sigue siendo una validación manual.

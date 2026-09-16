@@ -61,3 +61,25 @@ observar una ventana JavaFX nativa mediante las herramientas disponibles.
 La evidencia automatizada cubre la persistencia del estado de lista, los
 selectores CSS de celdas vacías y las reglas de densidad. La comprobación de
 clipping real sigue siendo manual.
+
+## Iteración de corrección UI/UX basada en evidencia
+
+Esta iteración conserva la línea visual actual y corrige los defectos observados
+en la inspección manual:
+
+- **Detalles del túnel estrechos o sin cierre fiable:** el diálogo usaba el
+  `contentText` de `Alert` para contenido técnico largo y añadía una acción sin
+  un cierre explícito. Ahora usa un `TextArea` solo lectura con wrapping,
+  desplazamiento interno, `Cerrar`, `Copiar`, tamaño responsivo limitado por la
+  pantalla y cierre explícito para X/Escape/Alt+F4.
+- **Tags incómodos:** la lista pequeña ya no permanece ocupando el editor. Las
+  selecciones aparecen como chips removibles y `+ Añadir` abre un picker con
+  búsqueda y selección múltiple; el control es compartido por túneles y grupos.
+- **Favoritos y acciones de fila:** la estrella se centra mediante una celda
+  real y las acciones usan glifos de 16 px con botones de 32×32 px, tooltips y
+  nombres accesibles.
+
+La cobertura automatizada comprueba el contrato CSS y la eliminación accesible
+de chips. La inspección renderizada de diálogos, DPI, contraste y clipping sigue
+siendo manual porque este entorno no expone una ventana JavaFX nativa para
+capturarla y analizarla visualmente.

@@ -45,9 +45,26 @@ son 6–8 px para superficies y 5–6 px para controles.
 - Métricas: tarjetas compactas en el Hub que muestran datos reales y permiten
   navegar a estados cuando la acción es aplicable.
 - Formularios: grids expansibles con labels acotadas y controles que crecen.
-- Tags: búsqueda, lista seleccionable y chips de selección.
+- Tags: chips de selección compactos con eliminación individual y un picker de
+  búsqueda multi-selección bajo la acción `+ Añadir`. El mismo control se usa
+  en túneles y grupos.
 - Diálogos: superficie común, cabecera diferenciada, acciones consistentes y
-  contenido largo desplazable cuando procede.
+  contenido largo desplazable cuando procede. Los diálogos técnicos parten de
+  un ancho legible aproximado de 600–760 px y un alto de 420–560 px, limitados
+  por el área visible de la pantalla; no deben consumir una medida fija que
+  impida usarlos con DPI alto.
+
+## Iconos y objetivos de interacción
+
+- Los iconos pequeños usan una escala visual de 14–16 px; las acciones de fila
+  usan 16 px para que el glifo no se pierda junto al texto de la tabla.
+- Todo botón de icono mantiene un objetivo mínimo de 32×32 px, incluyendo
+  padding y estados de foco. Las acciones de una fila se separan 4 px y deben
+  tener tooltip y nombre accesible.
+- El favorito se centra en su celda y comunica la acción mediante tooltip; no
+  depende de espacios invisibles ni únicamente del color.
+- Los chips mantienen un botón de eliminación de al menos 22×22 px dentro del
+  objetivo del chip, con foco y hover visibles.
 
 ## Layout
 
@@ -59,4 +76,3 @@ usan `ColumnConstraints` y los paneles permiten wrapping.
 La comprobación visual real de 100 %, 125 %, 150 % y 200 % de Windows sigue
 siendo manual. Los tests de CSS y los smoke tests JavaFX protegen contratos y
 arranque, pero no sustituyen esa inspección.
-
