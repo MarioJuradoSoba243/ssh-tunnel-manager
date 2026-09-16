@@ -50,6 +50,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -68,12 +70,14 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
@@ -81,6 +85,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
+import javafx.stage.Window;
 
 public final class ShellController implements AutoCloseable {
   @FXML private ListView<NavigationItem> navigationList;
@@ -1552,6 +1558,26 @@ public final class ShellController implements AutoCloseable {
     favorite.setCellValueFactory(
         data ->
             new javafx.beans.property.SimpleStringProperty(data.getValue().favorite() ? "★" : ""));
+    favorite.getStyleClass().add("favorite-column");
+    favorite.setCellFactory(
+        ignored ->
+            new TableCell<>() {
+              {
+                setAlignment(Pos.CENTER);
+              }
+
+              @Override
+              protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setAccessibleText(
+                    empty ? null : item == null || item.isBlank() ? "No favorito" : "Favorito");
+                setTooltip(
+                    empty
+                        ? null
+                        : new Tooltip(item == null || item.isBlank() ? "No favorito" : "Favorito"));
+              }
+            });
     TableColumn<TunnelRecord, Void> quickActions = quickActionsColumn();
     tunnelTable.getColumns().addAll(name, endpoint, state, active, favorite, quickActions);
     tunnelTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -2517,18 +2543,11 @@ public final class ShellController implements AutoCloseable {
         runtime.sessionEvents().isEmpty()
             ? "Sin eventos en esta sesión."
             : String.join("\n", runtime.sessionEvents());
-    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-    alert.setTitle("Detalles del túnel");
-    alert.setHeaderText(selected.name() + " — " + runtime.actualState());
-    alert.setContentText("Historial de sesión:\n" + events + "\n\nDetalle técnico:\n" + error);
-    ButtonType copy = new ButtonType("Copiar error");
-    alert.getButtonTypes().add(copy);
-    alert
-        .showAndWait()
-        .ifPresent(
-            button -> {
-              if (button == copy) copyToClipboard(error);
-            });
+    showTechnicalDialog(
+        "Detalles del túnel",
+        selected.name() + " — " + runtime.actualState(),
+        "Historial de sesión:\n" + events + "\n\nDetalle técnico:\n" + error,
+        error);
   }
 
   private void operateTunnel(TunnelRecord selected, java.util.function.Consumer<UUID> operation) {
@@ -2846,15 +2865,43 @@ public final class ShellController implements AutoCloseable {
   }
 
   private void showTechnicalError(String details) {
-    Alert technical = new Alert(Alert.AlertType.INFORMATION, details);
-    technical.setHeaderText("Detalles técnicos");
-    ButtonType copy = new ButtonType("Copiar error");
-    technical.getButtonTypes().add(copy);
+    showTechnicalDialog("Detalles técnicos", "Información para diagnóstico", details, details);
+  }
+
+  private void showTechnicalDialog(String title, String header, String content, String copyValue) {
+    Alert technical = new Alert(Alert.AlertType.INFORMATION);
+    technical.setTitle(title);
+    technical.setHeaderText(header);
+    TextArea text = new TextArea(content == null ? "" : content);
+    text.setEditable(false);
+    text.setWrapText(true);
+    text.setPrefColumnCount(80);
+    text.setPrefRowCount(20);
+    text.setMaxWidth(Double.MAX_VALUE);
+    text.setMaxHeight(Double.MAX_VALUE);
+    text.getStyleClass().add("technical-text");
+    technical.getDialogPane().setContent(text);
+    technical.getDialogPane().getStyleClass().add("technical-dialog");
+    ButtonType close = new ButtonType("Cerrar", ButtonBar.ButtonData.CANCEL_CLOSE);
+    ButtonType copy = new ButtonType("Copiar", ButtonBar.ButtonData.OTHER);
+    technical.getButtonTypes().setAll(close, copy);
+    technical.setResizable(true);
+    technical.setOnCloseRequest(event -> technical.close());
+    technical.setOnShown(
+        event -> {
+          Window window = technical.getDialogPane().getScene().getWindow();
+          Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+          double width = Math.min(760, Math.max(600, bounds.getWidth() * 0.75));
+          double height = Math.min(560, Math.max(420, bounds.getHeight() * 0.75));
+          window.setWidth(Math.min(width, bounds.getWidth() * 0.95));
+          window.setHeight(Math.min(height, bounds.getHeight() * 0.90));
+          text.requestFocus();
+        });
     technical
         .showAndWait()
         .ifPresent(
             result -> {
-              if (result == copy) copyToClipboard(details);
+              if (result == copy) copyToClipboard(copyValue == null ? "" : copyValue);
             });
   }
 

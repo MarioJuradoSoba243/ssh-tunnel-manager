@@ -308,8 +308,19 @@
 }
 
 .contextual-selection-bar .label { -fx-text-fill: white; -fx-font-weight: bold; }
-.row-actions { -fx-alignment: CENTER_RIGHT; }
-.row-action { -fx-font-size: 13px; }
+.row-actions { -fx-alignment: CENTER_RIGHT; -fx-spacing: 4px; }
+.row-action {
+    -fx-font-size: 16px;
+    -fx-min-width: 32px;
+    -fx-min-height: 32px;
+    -fx-pref-width: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 5px;
+}
+
+.favorite-column {
+    -fx-alignment: CENTER;
+}
 
 .toast-layer {
     -fx-padding: 18px;
@@ -358,8 +369,11 @@
 .density-compact .content-pane { -fx-padding: 12px 18px 18px 18px; }
 
 .button.icon {
-    -fx-min-width: 34px;
-    -fx-padding: 8px;
+    -fx-min-width: 32px;
+    -fx-min-height: 32px;
+    -fx-pref-width: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 5px;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
@@ -600,7 +614,18 @@
 }
 
 .tag-list {
-    -fx-pref-width: 280px;
+    -fx-pref-width: 360px;
+    -fx-max-width: Infinity;
+}
+
+.tag-picker {
+    -fx-pref-width: 460px;
+    -fx-max-width: 720px;
+}
+
+.tag-picker .text-field,
+.tag-picker .list-view {
+    -fx-max-width: Infinity;
 }
 
 .tag-chips {
@@ -614,6 +639,37 @@
     -fx-border-radius: 12px;
     -fx-background-radius: 12px;
     -fx-padding: 4px 9px;
+}
+
+.tag-chip .label {
+    -fx-text-fill: -app-text-primary;
+}
+
+.tag-chip .chip-remove {
+    -fx-min-width: 22px;
+    -fx-min-height: 22px;
+    -fx-pref-width: 22px;
+    -fx-pref-height: 22px;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -app-text-secondary;
+}
+
+.tag-chip .chip-remove:hover,
+.tag-chip .chip-remove:focused {
+    -fx-background-color: -app-surface-hover;
+    -fx-text-fill: -app-text-primary;
+}
+
+.technical-dialog .technical-text {
+    -fx-min-width: 520px;
+    -fx-min-height: 300px;
+}
+
+.technical-dialog {
+    -fx-min-width: 600px;
+    -fx-min-height: 380px;
 }
 
 .password-stack,
