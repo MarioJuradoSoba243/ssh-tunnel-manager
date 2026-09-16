@@ -50,3 +50,15 @@
   modal sin cambiar la lógica de aplicación.
 - [ ] 6.7 Validar manualmente la iteración en claro/oscuro y escalados Windows;
   esta tarea sigue vinculada a 8.20 y no se marca automáticamente.
+
+## 7. Regresión UI/UX
+
+- [x] 7.1 Corregir el ciclo de vida de Túneles para reutilizar la vista, sus
+  listas transformadas, filtros, ordenación y listeners al navegar.
+- [x] 7.2 Hacer explícitamente no interactivas las celdas vacías de la sidebar
+  y limitar los estados hover/focus a navegación real.
+- [x] 7.3 Revisar la altura mínima de controles de texto y selectores en Compact
+  sin reducir la tipografía ni introducir anchos fijos arbitrarios.
+- [x] 7.4 Añadir pruebas de regresión para estado de lista, CSS de sidebar y
+  legibilidad estructural de Compact.
+- [ ] 7.5 Repetir la auditoría visual renderizada en Windows; permanece manual.

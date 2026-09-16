@@ -78,3 +78,25 @@ siendo utilizables sin depender únicamente del color para comunicar estados.
 - WHEN el usuario selecciona Compact
 - THEN se aplica la clase visual correspondiente y se guarda la preferencia
 - AND el siguiente arranque conserva la densidad elegida
+
+#### Scenario: La lista de túneles sobrevive a la navegación
+
+- GIVEN existen túneles configurados y la vista Túneles ya está cargada
+- WHEN el usuario navega a otra sección y vuelve a Túneles
+- THEN se reutiliza la vista y su estado observable
+- AND los túneles, filtros, ordenación y selección válida no se pierden
+- AND no se registran listeners duplicados ni aparecen filas duplicadas
+
+#### Scenario: El espacio vacío de la sidebar no es interactivo
+
+- GIVEN la sidebar está visible con espacio libre bajo sus opciones
+- WHEN el puntero pasa por una zona sin elemento de navegación
+- THEN no se muestra estado hover, focus ni selección
+- AND solo las celdas de navegación reales aceptan interacción
+
+#### Scenario: La densidad compacta conserva la legibilidad
+
+- GIVEN está seleccionada la densidad Compact
+- WHEN un ComboBox, campo, botón, badge o fila de tabla renderiza texto
+- THEN conserva una altura mínima suficiente para la tipografía
+- AND el contenido no queda cortado verticalmente
