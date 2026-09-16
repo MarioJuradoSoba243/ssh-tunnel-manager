@@ -21,3 +21,23 @@ La auditoría de DPI, temas y layouts renderizados sigue requiriendo la checklis
 manual de `docs/technical/ui-ux-audit-v1.md` y la validación final del entorno
 Windows. Los tests de recursos CSS y de comportamiento puro no sustituyen esa
 comprobación visual.
+
+## Checklist manual de esta iteración
+
+Marcar `PASS` o `FAIL` después de observar la aplicación renderizada:
+
+| Superficie | Claro 100/125/150/200 % | Oscuro 100/125/150/200 % | Observaciones |
+| --- | --- | --- | --- |
+| Hub, métricas y actividad | ____ | ____ | ____________________ |
+| Túneles, chips y barra contextual | ____ | ____ | ____________________ |
+| Panel de detalle y acciones de fila | ____ | ____ | ____________________ |
+| Paleta Ctrl+K y navegación por teclado | ____ | ____ | ____________________ |
+| Editor de túnel | ____ | ____ | ____________________ |
+| Grupos y editor de grupo | ____ | ____ | ____________________ |
+| Hosts SSH y diálogos | ____ | ____ | ____________________ |
+| Organización y Ajustes > Apariencia | ____ | ____ | ____________________ |
+| Errores, tooltips y toasts | ____ | ____ | ____________________ |
+
+Esta sesión validó compilación, tests, recursos CSS y arranque del portable;
+no validó píxeles, contraste medido ni clipping en DPI porque no se pudo
+observar una ventana JavaFX nativa mediante las herramientas disponibles.
