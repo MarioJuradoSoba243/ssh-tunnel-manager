@@ -34,3 +34,19 @@
 - [x] 5.2 Actualizar documentación técnica y checklist manual visual.
 - [x] 5.3 Ejecutar Spotless, smoke tests JavaFX y `clean verify`.
 - [x] 5.4 Registrar pendientes manuales sin marcar 8.20, 8.30 ni READY.
+
+## 6. Iteración operativa contextual
+
+- [x] 6.1 Añadir componentes UI reutilizables para badges de estado, chips de
+  filtro, toasts y detalle contextual.
+- [x] 6.2 Incorporar panel master-detail en Túneles con ruta SSH y actividad.
+- [x] 6.3 Incorporar paleta Ctrl+K con comandos, entidades, navegación y
+  operación por teclado.
+- [x] 6.4 Incorporar filtros activos, barra contextual de selección múltiple y
+  acciones rápidas por fila.
+- [x] 6.5 Persistir densidad visual y estado de selección/sección de forma
+  compatible con los ajustes existentes.
+- [x] 6.6 Mejorar estados vacíos, onboarding inicial, tooltips y feedback no
+  modal sin cambiar la lógica de aplicación.
+- [ ] 6.7 Validar manualmente la iteración en claro/oscuro y escalados Windows;
+  esta tarea sigue vinculada a 8.20 y no se marca automáticamente.
