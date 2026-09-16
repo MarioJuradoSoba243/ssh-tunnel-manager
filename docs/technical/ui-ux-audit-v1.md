@@ -25,6 +25,11 @@ cierra las tareas 8.20, 8.30 ni la validación final de v1.0.0.
   `%TEMP%\ssh-tunnel-manager-ui-organization-final.png`,
   `%TEMP%\ssh-tunnel-manager-ui-settings-corrected.png` y
   `%TEMP%\ssh-tunnel-manager-ui-dark-tunnels-final.png`.
+- En el bloque de modernización actual el ejecutable Windows se volvió a
+  arrancar después de compilar el nuevo FXML/CSS. La interfaz nativa CUA no
+  expuso una ventana inspeccionable en esta sesión y el capturador alternativo
+  disponible no pudo cargar `System.Drawing.Common`; por tanto, el top bar y
+  los últimos cambios de shell quedan pendientes de inspección visual manual.
 
 ## Problemas encontrados y tratamiento
 
