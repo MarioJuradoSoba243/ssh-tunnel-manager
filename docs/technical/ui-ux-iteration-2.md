@@ -83,3 +83,28 @@ La cobertura automatizada comprueba el contrato CSS y la eliminación accesible
 de chips. La inspección renderizada de diálogos, DPI, contraste y clipping sigue
 siendo manual porque este entorno no expone una ventana JavaFX nativa para
 capturarla y analizarla visualmente.
+
+### Trazabilidad de defectos corregidos
+
+| Pantalla | Tema / escala | Causa | Cambio aplicado | Evidencia disponible |
+| --- | --- | --- | --- | --- |
+| Detalles del túnel y Ver detalles | Claro/oscuro; todas | `Alert.contentText` no era adecuado para texto técnico largo y la acción adicional no definía un cierre explícito. | Diálogo técnico común con `TextArea` solo lectura, wrapping, scroll interno, `Cerrar`, `Copiar`, X/Escape/Alt+F4 y tamaño limitado por la pantalla. | `UiThemeCssTest`, `clean verify`; inspección visual manual pendiente. |
+| Editor de túnel y editor de grupo | Claro/oscuro; todas | `ListView` de tags pequeña y permanentemente visible, sin resumen ni eliminación rápida. | Chips compactos con botón accesible de eliminación y picker `+ Añadir` compartido, con búsqueda y selección múltiple. | `TagSelectionControlTest`, `clean verify`; inspección visual manual pendiente. |
+| Tabla de túneles | Claro/oscuro; todas | La celda de favorito heredaba alineación y el glifo de acción tenía solo 13 px. | Celda de favorito centrada con estado accesible/tooltip y acciones de fila de 16 px en objetivos 32×32 px con 4 px de separación. | `UiThemeCssTest`, `TagSelectionControlTest`, `clean verify`; inspección visual manual pendiente. |
+
+### Checklist manual específica de esta regresión
+
+Completar en claro y oscuro, con ventana aproximada de 1024×700 y maximizada,
+para 100 %, 125 %, 150 % y 200 %. Marcar PASS/FAIL solo después de observar la
+ventana renderizada.
+
+| Escenario | Claro 100/125/150/200 % | Oscuro 100/125/150/200 % | Observaciones |
+| --- | --- | --- | --- |
+| Abrir detalles del túnel; Cerrar, X, Escape y Alt+F4 | ____ | ____ | ____________________ |
+| Detalles técnicos largos: wrapping, scroll y Copiar | ____ | ____ | ____________________ |
+| Tags en editor de túnel: chips, Añadir, búsqueda, multi-selección y quitar | ____ | ____ | ____________________ |
+| Tags en editor de grupo: mismo picker y persistencia al reabrir | ____ | ____ | ____________________ |
+| Favoritos centrados y distinguibles sin espacios invisibles | ____ | ____ | ____________________ |
+| Acciones de fila: glifo legible, objetivo, foco, hover y tooltip | ____ | ____ | ____________________ |
+| Diálogos de error/importación/conflicto/backup sin clipping ni estrechez | ____ | ____ | ____________________ |
+| Hub, Túneles, Grupos, Hosts, Organización, Ajustes y búsqueda sin regresión | ____ | ____ | ____________________ |
