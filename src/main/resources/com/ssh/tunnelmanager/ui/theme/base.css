@@ -223,6 +223,113 @@
     -fx-text-fill: white;
 }
 
+.tunnel-master-detail {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.tunnel-master-detail .split-pane-divider {
+    -fx-background-color: -app-border-subtle;
+    -fx-padding: 0 1px;
+}
+
+.tunnel-detail-panel {
+    -fx-padding: 16px;
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border-subtle;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.detail-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-primary;
+}
+
+.status-badge {
+    -fx-spacing: 6px;
+    -fx-padding: 4px 8px;
+    -fx-background-radius: 999px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.status-badge .status-label,
+.status-badge .status-dot {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.status-badge.open { -fx-background-color: derive(-app-success, 80%); -fx-text-fill: -app-success; }
+.status-badge.open .status-label, .status-badge.open .status-dot { -fx-text-fill: -app-success; }
+.status-badge.error { -fx-background-color: derive(-app-error, 85%); }
+.status-badge.error .status-label, .status-badge.error .status-dot { -fx-text-fill: -app-error; }
+.status-badge.reconnecting, .status-badge.connecting, .status-badge.queued { -fx-background-color: derive(-app-warning, 82%); }
+.status-badge.reconnecting .status-label, .status-badge.reconnecting .status-dot,
+.status-badge.connecting .status-label, .status-badge.connecting .status-dot,
+.status-badge.queued .status-label, .status-badge.queued .status-dot { -fx-text-fill: -app-warning; }
+.status-badge.closed, .status-badge.stopping { -fx-background-color: -app-surface-secondary; }
+.status-badge.closed .status-label, .status-badge.closed .status-dot,
+.status-badge.stopping .status-label, .status-badge.stopping .status-dot { -fx-text-fill: -app-text-secondary; }
+
+.filter-chips {
+    -fx-padding: 2px 0;
+}
+
+.filter-chip {
+    -fx-spacing: 5px;
+    -fx-padding: 3px 5px 3px 9px;
+    -fx-background-color: -app-surface-selected;
+    -fx-background-radius: 999px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.filter-chip .label { -fx-text-fill: white; -fx-font-size: 12px; }
+.chip-remove {
+    -fx-min-width: 22px;
+    -fx-min-height: 22px;
+    -fx-padding: 1px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+}
+
+.contextual-selection-bar {
+    -fx-padding: 9px 12px;
+    -fx-background-color: -app-surface-selected;
+    -fx-background-radius: 7px;
+}
+
+.contextual-selection-bar .label { -fx-text-fill: white; -fx-font-weight: bold; }
+.row-actions { -fx-alignment: CENTER_RIGHT; }
+.row-action { -fx-font-size: 13px; }
+
+.toast-layer {
+    -fx-padding: 18px;
+    -fx-spacing: 8px;
+}
+
+.toast {
+    -fx-padding: 10px 14px;
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border-strong;
+    -fx-background-radius: 7px;
+    -fx-border-radius: 7px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 12, 0.2, 0, 3);
+}
+
+.toast.success { -fx-border-color: -app-success; }
+.toast.error { -fx-border-color: -app-error; }
+.toast.warning { -fx-border-color: -app-warning; }
+
+.command-palette { -fx-padding: 2px; }
+.command-palette .list-view { -fx-min-height: 260px; }
+
+.density-compact .table-row-cell,
+.density-compact .list-cell { -fx-cell-size: 30px; }
+.density-compact .button { -fx-min-height: 30px; -fx-padding: 6px 10px; }
+.density-compact .content-pane { -fx-padding: 12px 18px 18px 18px; }
+
 .button.icon {
     -fx-min-width: 34px;
     -fx-padding: 8px;

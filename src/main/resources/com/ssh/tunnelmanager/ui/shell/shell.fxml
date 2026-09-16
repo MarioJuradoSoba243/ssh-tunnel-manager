@@ -9,11 +9,13 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import com.ssh.tunnelmanager.ui.shell.ToastHost?>
 
-<BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.ssh.tunnelmanager.ui.shell.ShellController"
-            styleClass="app-shell">
-    <left>
+<StackPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.ssh.tunnelmanager.ui.shell.ShellController"
+           styleClass="app-shell">
+    <BorderPane>
+        <left>
         <VBox minWidth="190.0" prefWidth="230.0" maxWidth="280.0" spacing="12.0" styleClass="navigation-pane">
             <padding>
                 <Insets bottom="20.0" left="16.0" right="16.0" top="20.0" />
@@ -28,8 +30,8 @@
                 <Label text="v1.0.0 · Windows" />
             </VBox>
         </VBox>
-    </left>
-    <center>
+        </left>
+        <center>
         <VBox styleClass="main-column">
             <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="top-bar">
                 <VBox spacing="2.0" HBox.hgrow="ALWAYS">
@@ -48,5 +50,8 @@
                 </ScrollPane>
             </StackPane>
         </VBox>
-    </center>
-</BorderPane>
+        </center>
+    </BorderPane>
+    <ToastHost fx:id="toastHost" alignment="BOTTOM_RIGHT" maxWidth="420.0"
+               StackPane.alignment="BOTTOM_RIGHT" styleClass="toast-layer" />
+</StackPane>
