@@ -223,6 +223,13 @@
     -fx-text-fill: white;
 }
 
+.button.icon {
+    -fx-min-width: 34px;
+    -fx-padding: 8px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
 .button:focused,
 .combo-box-base:focused,
 .text-input:focused,
@@ -608,6 +615,41 @@
 
 .text-area {
     -fx-pref-row-count: 5;
+    -fx-background-color: -app-surface-secondary;
+    -fx-border-color: -app-border-subtle;
+    -fx-text-fill: -app-text-primary;
+    -fx-prompt-text-fill: -app-text-muted;
+}
+
+.spinner,
+.radio-button {
+    -fx-text-fill: -app-text-primary;
+}
+
+.spinner .text-field {
+    -fx-background-color: -app-surface-secondary;
+    -fx-border-color: -app-border-subtle;
+    -fx-text-fill: -app-text-primary;
+}
+
+.radio-button .radio {
+    -fx-background-color: -app-surface-secondary;
+    -fx-border-color: -app-border-subtle;
+}
+
+.radio-button:selected .radio {
+    -fx-background-color: -app-accent;
+    -fx-border-color: -app-accent;
+}
+
+.radio-button:selected .dot {
+    -fx-background-color: white;
+}
+
+.tooltip {
+    -fx-background-color: -app-surface-secondary;
+    -fx-border-color: -app-border-subtle;
+    -fx-text-fill: -app-text-primary;
 }
 
 .error-text {

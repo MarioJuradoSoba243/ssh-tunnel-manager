@@ -53,8 +53,13 @@ class UiThemeCssTest {
             ".button.primary",
             ".button.secondary",
             ".button.danger",
+            ".button.icon",
             ".navigation-pane .list-cell:selected",
-            ".top-bar");
+            ".top-bar",
+            ".spinner",
+            ".radio-button",
+            ".tooltip",
+            ".text-area");
   }
 
   private static String read(String resource) throws IOException {
