@@ -14,7 +14,11 @@ class ShellSmokeTest {
   @Test
   void createsTheInitialSceneWithoutStartingAnySshConnection() throws Exception {
     CountDownLatch toolkitStarted = new CountDownLatch(1);
-    Platform.startup(toolkitStarted::countDown);
+    try {
+      Platform.startup(toolkitStarted::countDown);
+    } catch (IllegalStateException alreadyStarted) {
+      toolkitStarted.countDown();
+    }
     assertThat(toolkitStarted.await(5, TimeUnit.SECONDS)).isTrue();
 
     SshTunnelManagerApplication application =
