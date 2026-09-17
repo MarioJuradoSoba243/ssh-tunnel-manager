@@ -41,6 +41,25 @@ class TagSelectionControlTest {
     assertThat(created.selectedTagIds()).isEmpty();
   }
 
+  @Test
+  void keepsTheMainFormCompactAndDoesNotEmbedAPermanentTagList() throws Exception {
+    AtomicReference<TagSelectionControl> control = new AtomicReference<>();
+
+    runOnJavaFx(
+        () ->
+            control.set(
+                new TagSelectionControl(
+                    List.of(new TagRecord(UUID.randomUUID(), "API")), Set.of())));
+
+    TagSelectionControl created = control.get();
+    FlowPane chips = (FlowPane) created.getChildren().get(1);
+    assertThat(created.getChildren()).hasSize(2);
+    assertThat(chips.getChildren())
+        .anyMatch(node -> node instanceof Button button && button.getText().equals("+ Añadir"));
+    assertThat(chips.getChildren())
+        .noneMatch(node -> node instanceof javafx.scene.control.ListView<?>);
+  }
+
   private static void runOnJavaFx(Runnable action) throws Exception {
     try {
       Platform.startup(() -> {});
