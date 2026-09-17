@@ -614,13 +614,22 @@
 }
 
 .tag-list {
-    -fx-pref-width: 360px;
+    -fx-pref-width: 320px;
+    -fx-min-width: 260px;
     -fx-max-width: Infinity;
 }
 
 .tag-picker {
-    -fx-pref-width: 460px;
-    -fx-max-width: 720px;
+    -fx-pref-width: 320px;
+    -fx-min-width: 260px;
+    -fx-max-width: 420px;
+    -fx-padding: 10px;
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border-strong;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.24), 14, 0.2, 0, 4);
 }
 
 .tag-picker .text-field,
@@ -643,6 +652,24 @@
 
 .tag-chip .label {
     -fx-text-fill: -app-text-primary;
+}
+
+.tag-selection > .label {
+    -fx-font-weight: bold;
+}
+
+.tag-selection .tag-chips {
+    -fx-hgap: 6px;
+    -fx-vgap: 6px;
+    -fx-padding: 2px 0;
+}
+
+.tag-picker .list-cell {
+    -fx-padding: 6px 8px;
+}
+
+.tag-picker .check-box {
+    -fx-max-width: Infinity;
 }
 
 .tag-chip .chip-remove {
