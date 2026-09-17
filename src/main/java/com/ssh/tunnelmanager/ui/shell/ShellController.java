@@ -110,6 +110,7 @@ public final class ShellController implements AutoCloseable {
   private TableView<SshHostRecord> hostTable;
   private Node tunnelView;
   private VBox tunnelDetailPanel;
+  private MainContentNavigator mainContentNavigator;
   private FlowPane tunnelFilterChips;
   private VBox contextualSelectionBar;
   private Label selectionSummary;
@@ -200,6 +201,7 @@ public final class ShellController implements AutoCloseable {
 
   @FXML
   private void initialize() {
+    mainContentNavigator = new MainContentNavigator(contentContainer);
     if (components != null) {
       density = components.settingsRepository().findValue("ui.density").orElse("COMFORTABLE");
       density = density.equals("COMPACT") ? "COMPACT" : "COMFORTABLE";
@@ -303,6 +305,18 @@ public final class ShellController implements AutoCloseable {
         .ifPresent(item -> navigationList.getSelectionModel().select(item));
   }
 
+  private void replaceMainContent(Node... views) {
+    if (mainContentNavigator == null) {
+      mainContentNavigator = new MainContentNavigator(contentContainer);
+    }
+    mainContentNavigator.replace(views);
+  }
+
+  private boolean isSelectedSection(String id) {
+    NavigationItem selected = navigationList.getSelectionModel().getSelectedItem();
+    return selected != null && selected.id().equals(id);
+  }
+
   private static String navigationIcon(String id) {
     return switch (id) {
       case "home" -> "⌂";
@@ -320,9 +334,7 @@ public final class ShellController implements AutoCloseable {
     editingTunnel = false;
     editingGroup = false;
     sectionTitle.setText(UiMessages.get("navigation." + item.id()));
-    contentContainer
-        .getChildren()
-        .removeIf(node -> node != sectionTitle && node != sectionDescription);
+    replaceMainContent();
     switch (item.id()) {
       case "hosts" -> showHosts();
       case "tunnels" -> showTunnels();
@@ -383,7 +395,7 @@ public final class ShellController implements AutoCloseable {
     favorites.setMaxHeight(180);
     recent.setMaxHeight(180);
     active.setMaxHeight(180);
-    contentContainer.getChildren().add(content);
+    replaceMainContent(content);
     workers.submit(
         () -> {
           search.refresh();
@@ -658,7 +670,7 @@ public final class ShellController implements AutoCloseable {
     FlowPane columns = new FlowPane(12, 12, projectPanel, environmentPanel, tagPanel);
     columns.getStyleClass().add("organization-columns");
     columns.setMaxWidth(Double.MAX_VALUE);
-    contentContainer.getChildren().add(columns);
+    replaceMainContent(columns);
   }
 
   private void showSettings() {
@@ -1250,7 +1262,7 @@ public final class ShellController implements AutoCloseable {
     name.setMinWidth(180);
     members.setMinWidth(90);
     state.setMinWidth(180);
-    contentContainer.getChildren().addAll(groupTable, flowPane(add, edit, start, stop, more));
+    replaceMainContent(groupTable, flowPane(add, edit, start, stop, more));
     refreshGroups(groupTable);
     statusRefresh =
         new Timeline(
@@ -1330,11 +1342,10 @@ public final class ShellController implements AutoCloseable {
       List<ProjectRecord> projectRecords,
       List<EnvironmentRecord> environmentRecords,
       List<TagRecord> tagRecords) {
+    if (!isSelectedSection("groups")) return;
     editingGroup = true;
     stopStatusRefresh();
-    contentContainer
-        .getChildren()
-        .removeIf(node -> node != sectionTitle && node != sectionDescription);
+    replaceMainContent();
     sectionDescription.setText(
         "Editor de grupo: busca túneles, revisa conflictos y guarda la selección.");
     GroupEditorViewModel.Form initial =
@@ -1418,7 +1429,7 @@ public final class ShellController implements AutoCloseable {
             choices,
             flowPane(save, cancel));
     VBox.setVgrow(choices, Priority.ALWAYS);
-    contentContainer.getChildren().add(editor);
+    replaceMainContent(editor);
   }
 
   private void saveGroupEditor(
@@ -1507,7 +1518,7 @@ public final class ShellController implements AutoCloseable {
     MenuButton more = new MenuButton("Más");
     more.getItems().addAll(remove, new SeparatorMenuItem(), forget);
     actions.getChildren().addAll(add, edit, more);
-    contentContainer.getChildren().addAll(table, actions);
+    replaceMainContent(table, actions);
     refreshHosts(table);
   }
 
@@ -1518,7 +1529,7 @@ public final class ShellController implements AutoCloseable {
         "Local Port Forwarding: configura, prueba, inicia, detén y reintenta túneles individuales.");
     if (tunnels == null) return;
     if (tunnelView != null) {
-      contentContainer.getChildren().add(tunnelView);
+      replaceMainContent(tunnelView);
       refreshTunnels(tunnelTable);
       return;
     }
@@ -1764,7 +1775,7 @@ public final class ShellController implements AutoCloseable {
         new javafx.collections.transformation.SortedList<>(filteredTunnelRows);
     sorted.comparatorProperty().bind(tunnelTable.comparatorProperty());
     tunnelTable.setItems(sorted);
-    contentContainer.getChildren().add(split);
+    replaceMainContent(split);
     refreshTunnels(tunnelTable);
   }
 
@@ -1904,6 +1915,10 @@ public final class ShellController implements AutoCloseable {
   }
 
   private void refreshTunnels(TableView<TunnelRecord> table) {
+    Set<UUID> selectedIds =
+        selectedTunnels().stream()
+            .map(TunnelRecord::id)
+            .collect(java.util.stream.Collectors.toSet());
     workers.submit(
         () -> {
           List<TunnelRecord> values = tunnels.tunnels();
@@ -1926,8 +1941,19 @@ public final class ShellController implements AutoCloseable {
                   tunnelTagFilter.getItems().setAll(components.tagRepository().findAll());
                 }
                 applyTunnelFilters();
+                restoreTunnelSelection(selectedIds);
               });
         });
+  }
+
+  private void restoreTunnelSelection(Set<UUID> selectedIds) {
+    if (tunnelTable == null || selectedIds.isEmpty()) return;
+    tunnelTable.getSelectionModel().clearSelection();
+    for (int index = 0; index < tunnelTable.getItems().size(); index++) {
+      if (selectedIds.contains(tunnelTable.getItems().get(index).id())) {
+        tunnelTable.getSelectionModel().select(index);
+      }
+    }
   }
 
   private void applyTunnelFilters() {
@@ -2275,11 +2301,10 @@ public final class ShellController implements AutoCloseable {
       List<ProjectRecord> projectRecords,
       List<EnvironmentRecord> environmentRecords,
       List<TagRecord> tagRecords) {
+    if (!isSelectedSection("tunnels")) return;
     editingTunnel = true;
     stopStatusRefresh();
-    contentContainer
-        .getChildren()
-        .removeIf(node -> node != sectionTitle && node != sectionDescription);
+    replaceMainContent();
     sectionDescription.setText("Editor de túnel: valida localmente antes de guardar.");
     TunnelEditorViewModel.Form initial =
         existing == null ? TunnelEditorViewModel.newForm() : tunnelEditor.fromRecord(existing);
@@ -2366,7 +2391,7 @@ public final class ShellController implements AutoCloseable {
     VBox.setVgrow(tabs, Priority.ALWAYS);
     ScrollPane scroll = new ScrollPane(editor);
     scroll.setFitToWidth(true);
-    contentContainer.getChildren().add(scroll);
+    replaceMainContent(scroll);
 
     Runnable validate =
         () -> {
