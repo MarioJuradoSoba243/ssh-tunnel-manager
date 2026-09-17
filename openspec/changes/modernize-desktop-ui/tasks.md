@@ -75,3 +75,7 @@
   regresión UI/UX y registrar la guía del sistema visual.
 - [ ] 8.5 Repetir la auditoría visual renderizada en Windows en claro/oscuro y
   100/125/150/200 %; sigue siendo una validación manual.
+- [x] 8.6 Centralizar el reemplazo del contenido principal para evitar vistas
+  duplicadas al guardar/cancelar editores y descartar callbacks obsoletos.
+- [x] 8.7 Añadir tests de regresión estructurales para guardar, cancelar y
+  reutilizar la vista cacheada de Túneles.

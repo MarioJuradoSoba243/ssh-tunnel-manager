@@ -149,3 +149,32 @@ accesible y tooltip, y el favorito SHALL quedar centrado en su celda.
 - THEN cada acción mantiene un objetivo mínimo utilizable y un tooltip
 - AND el estado de favorito se distingue por alineación y texto accesible,
   además del glifo
+
+### Requirement: Navegación de reemplazo del contenido principal
+
+El área principal del shell SHALL contener una única composición de pantalla
+activa. Volver desde un editor SHALL reemplazar el contenido anterior y no
+añadir una segunda vista principal. Las vistas de túneles SHALL reutilizar su
+instancia cacheada y estado observable cuando corresponda.
+
+#### Scenario: Guardar un túnel vuelve a una sola vista
+
+- GIVEN el usuario está editando un túnel existente
+- WHEN guarda el editor
+- THEN el editor se cierra
+- AND se muestra exactamente una vista de túneles
+- AND la colección y el estado de la lista permanecen disponibles
+- AND no se añade una vista principal duplicada al shell
+
+#### Scenario: Cancelar la edición no duplica vistas
+
+- GIVEN el editor de túnel está abierto
+- WHEN el usuario cancela
+- THEN permanece exactamente una vista de túneles
+- AND el editor deja de formar parte del área principal
+
+#### Scenario: Un callback de editor obsoleto no cambia otra sección
+
+- GIVEN se solicitó cargar un editor y el usuario navega a otra sección antes de terminar
+- WHEN finaliza la carga asíncrona
+- THEN el editor obsoleto no reemplaza la sección actualmente seleccionada

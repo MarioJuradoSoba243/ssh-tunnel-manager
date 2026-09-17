@@ -78,6 +78,12 @@ en la inspección manual:
 - **Favoritos y acciones de fila:** la estrella se centra mediante una celda
   real y las acciones usan glifos de 16 px con botones de 32×32 px, tooltips y
   nombres accesibles.
+- **Editor apilado al volver a Túneles:** el shell añadía la vista cacheada con
+  `getChildren().add(...)` después de que el editor ya ocupaba el contenedor.
+  Todas las vistas principales pasan por reemplazo con `setAll(...)`, y los
+  callbacks asíncronos de carga de editores se descartan si la sección cambió.
+  La vista cacheada conserva filtros, ordenación, columnas, scroll y la
+  selección válida se restaura por `tunnelId` después de refrescar los records.
 
 La cobertura automatizada comprueba el contrato CSS y la eliminación accesible
 de chips. La inspección renderizada de diálogos, DPI, contraste y clipping sigue
@@ -108,3 +114,14 @@ ventana renderizada.
 | Acciones de fila: glifo legible, objetivo, foco, hover y tooltip | ____ | ____ | ____________________ |
 | Diálogos de error/importación/conflicto/backup sin clipping ni estrechez | ____ | ____ | ____________________ |
 | Hub, Túneles, Grupos, Hosts, Organización, Ajustes y búsqueda sin regresión | ____ | ____ | ____________________ |
+
+### Checklist manual específica de navegación de editores
+
+| Escenario | Resultado esperado | PASS/FAIL | Observaciones |
+| --- | --- | --- | --- |
+| Editar túnel y guardar sin cambios | El editor se cierra y queda una sola vista de Túneles | ____ | ____________________ |
+| Editar nombre, proyecto, entorno o etiquetas | La fila se actualiza sin duplicar la vista y conserva la selección válida | ____ | ____________________ |
+| Editar túnel y cancelar | No cambia el dato y queda una sola vista de Túneles | ____ | ____________________ |
+| Túnel activo: Guardar y reiniciar | Se muestra una sola vista y el runtime sigue la nueva configuración | ____ | ____________________ |
+| Repetir editar/guardar/cancelar cinco veces | No aparecen composiciones apiladas ni vistas duplicadas | ____ | ____________________ |
+| Navegar mientras carga un editor | El callback obsoleto no sustituye la sección actual | ____ | ____________________ |
