@@ -59,6 +59,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -72,6 +73,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -82,6 +84,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -110,9 +113,12 @@ public final class ShellController implements AutoCloseable {
   private TableView<SshHostRecord> hostTable;
   private Node tunnelView;
   private VBox tunnelDetailPanel;
+  private javafx.scene.control.SplitPane tunnelSplit;
+  private Button detailToggle;
+  private boolean tunnelDetailVisible = true;
   private MainContentNavigator mainContentNavigator;
   private FlowPane tunnelFilterChips;
-  private VBox contextualSelectionBar;
+  private HBox contextualSelectionBar;
   private Label selectionSummary;
   private final TunnelViewState tunnelViewState = new TunnelViewState();
   private final javafx.collections.ObservableList<TunnelRecord> tunnelRows = tunnelViewState.rows();
@@ -205,6 +211,12 @@ public final class ShellController implements AutoCloseable {
     if (components != null) {
       density = components.settingsRepository().findValue("ui.density").orElse("COMFORTABLE");
       density = density.equals("COMPACT") ? "COMPACT" : "COMFORTABLE";
+      tunnelDetailVisible =
+          !components
+              .settingsRepository()
+              .findValue("ui.tunnelDetailVisible")
+              .map(value -> value.equalsIgnoreCase("false"))
+              .orElse(false);
     }
     applyDensity();
     navigationList.getItems().setAll(shellViewModel.navigationItems());
@@ -536,11 +548,18 @@ public final class ShellController implements AutoCloseable {
         });
     entries.setOnKeyPressed(
         event -> {
-          if (event.getCode() == javafx.scene.input.KeyCode.ENTER
-              && entries.getSelectionModel().getSelectedItem() != null) {
-            dialog.setResult(entries.getSelectionModel().getSelectedItem());
-            dialog.close();
+          switch (event.getCode()) {
+            case UP -> entries.getSelectionModel().selectPrevious();
+            case DOWN -> entries.getSelectionModel().selectNext();
+            case ENTER -> {
+              if (entries.getSelectionModel().getSelectedItem() != null) {
+                dialog.setResult(entries.getSelectionModel().getSelectedItem());
+                dialog.close();
+              }
+            }
+            default -> {}
           }
+          event.consume();
         });
     dialog.setOnShown(
         event -> {
@@ -567,7 +586,24 @@ public final class ShellController implements AutoCloseable {
               Platform.runLater(() -> openHostEditor(hostTable, null));
             }),
         new CommandPaletteEntry(
+            "Nuevo grupo",
+            "Grupos",
+            () -> {
+              selectSection("groups");
+              Platform.runLater(() -> openGroupEditor(null));
+            }),
+        new CommandPaletteEntry("Abrir Túneles", "Navegación", () -> selectSection("tunnels")),
+        new CommandPaletteEntry("Abrir Grupos", "Navegación", () -> selectSection("groups")),
+        new CommandPaletteEntry("Abrir Hosts SSH", "Navegación", () -> selectSection("hosts")),
+        new CommandPaletteEntry(
+            "Abrir Organización",
+            "Proyectos · Entornos · Tags",
+            () -> selectSection("organization")),
+        new CommandPaletteEntry(
             "Abrir ajustes", "Apariencia y configuración", () -> selectSection("settings")),
+        new CommandPaletteEntry("Exportar configuración", "Datos", this::exportConfiguration),
+        new CommandPaletteEntry("Abrir carpeta de logs", "Diagnóstico", this::openLogsFolder),
+        new CommandPaletteEntry("Exportar diagnóstico", "Diagnóstico", this::exportDiagnostic),
         new CommandPaletteEntry("Refrescar vista", "F5", this::refreshCurrentSection),
         new CommandPaletteEntry("Detener todos", "Operación de emergencia", this::stopAllTunnels));
   }
@@ -764,16 +800,14 @@ public final class ShellController implements AutoCloseable {
     VBox data = new VBox(8, exportWarning, flowPane(export, importButton, backups));
     VBox diagnostics =
         new VBox(8, new Label("Nivel de logging"), logging, flowPane(diagnostic, logs));
-    contentContainer
-        .getChildren()
-        .add(
-            new VBox(
-                10,
-                settingsSection("Apariencia", appearance),
-                settingsSection("Notificaciones", notificationsSection),
-                settingsSection("Atajos de teclado", keyboard),
-                settingsSection("Datos", data),
-                settingsSection("Diagnóstico", diagnostics)));
+    replaceMainContent(
+        new VBox(
+            10,
+            settingsSection("Apariencia", appearance),
+            settingsSection("Notificaciones", notificationsSection),
+            settingsSection("Atajos de teclado", keyboard),
+            settingsSection("Datos", data),
+            settingsSection("Diagnóstico", diagnostics)));
   }
 
   private void applyDensity() {
@@ -1601,6 +1635,19 @@ public final class ShellController implements AutoCloseable {
     favorite.setMinWidth(55);
     quickActions.setMinWidth(142);
     tunnelTable.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
+    tunnelTable.setRowFactory(
+        table -> {
+          TableRow<TunnelRecord> row = new TableRow<>();
+          row.setOnContextMenuRequested(
+              event -> {
+                TunnelRecord selected = row.getItem();
+                if (selected == null) return;
+                table.getSelectionModel().clearAndSelect(row.getIndex());
+                createTunnelContextMenu(selected).show(row, event.getScreenX(), event.getScreenY());
+                event.consume();
+              });
+          return row;
+        });
     tunnelTable
         .getSelectionModel()
         .getSelectedItems()
@@ -1747,19 +1794,46 @@ public final class ShellController implements AutoCloseable {
         .getSelectedItems()
         .addListener(
             (javafx.collections.ListChangeListener<TagRecord>) change -> applyTunnelFilters());
-    FlowPane actions = flowPane(start, stop, add, edit, more);
-    contextualSelectionBar = new VBox(6);
+    detailToggle = new Button(tunnelDetailVisible ? "Ocultar detalle" : "Mostrar detalle");
+    buttonStyle(detailToggle, "ghost");
+    detailToggle.setTooltip(new Tooltip("Mostrar u ocultar el panel lateral de detalle"));
+    detailToggle.setOnAction(event -> toggleTunnelDetail());
+    FlowPane actions = flowPane(start, stop, add, edit, detailToggle, more);
+    contextualSelectionBar = new HBox(10);
     contextualSelectionBar.getStyleClass().add("contextual-selection-bar");
     selectionSummary = new Label();
     Button contextualStart = new Button("Iniciar selección");
     Button contextualStop = new Button("Detener selección");
+    Button contextualGroup = new Button("Añadir a grupo");
+    Button contextualFavorite = new Button("Favorito");
+    MenuButton contextualMore = new MenuButton("Más");
     buttonStyle(contextualStart, "primary");
     buttonStyle(contextualStop, "ghost");
+    buttonStyle(contextualGroup, "ghost");
+    buttonStyle(contextualFavorite, "ghost");
     contextualStart.setOnAction(event -> bulkOperate(true));
     contextualStop.setOnAction(event -> bulkOperate(false));
+    contextualGroup.setOnAction(event -> bulkAssignGroup());
+    contextualFavorite.setOnAction(event -> bulkFavorite(true));
+    contextualMore
+        .getItems()
+        .addAll(
+            new MenuItem("Quitar de grupo"),
+            new MenuItem("Asignar proyecto/entorno"),
+            new MenuItem("Quitar favorito"));
+    contextualMore.getItems().get(0).setOnAction(event -> bulkRemoveGroup());
+    contextualMore.getItems().get(1).setOnAction(event -> bulkAssignProject());
+    contextualMore.getItems().get(2).setOnAction(event -> bulkFavorite(false));
     contextualSelectionBar
         .getChildren()
-        .addAll(selectionSummary, flowPane(contextualStart, contextualStop));
+        .addAll(
+            selectionSummary,
+            contextualStart,
+            contextualStop,
+            contextualGroup,
+            contextualFavorite,
+            contextualMore);
+    HBox.setHgrow(selectionSummary, Priority.ALWAYS);
     contextualSelectionBar.setManaged(false);
     contextualSelectionBar.setVisible(false);
     VBox tableSide = new VBox(8, filters, tunnelTable, contextualSelectionBar, actions);
@@ -1767,6 +1841,8 @@ public final class ShellController implements AutoCloseable {
     tunnelDetailPanel = createTunnelDetailPanel();
     javafx.scene.control.SplitPane split =
         new javafx.scene.control.SplitPane(tableSide, tunnelDetailPanel);
+    tunnelSplit = split;
+    if (!tunnelDetailVisible) split.getItems().remove(tunnelDetailPanel);
     split.setDividerPositions(0.70);
     split.getStyleClass().add("tunnel-master-detail");
     VBox.setVgrow(split, Priority.ALWAYS);
@@ -1804,6 +1880,46 @@ public final class ShellController implements AutoCloseable {
               }
             });
     return column;
+  }
+
+  private ContextMenu createTunnelContextMenu(TunnelRecord selected) {
+    ContextMenu menu = new ContextMenu();
+    TunnelRuntime runtime = tunnels.runtime(selected.id());
+    MenuItem start = new MenuItem("Iniciar");
+    MenuItem stop = new MenuItem("Detener");
+    MenuItem retry = new MenuItem("Reintentar");
+    MenuItem edit = new MenuItem("Editar");
+    MenuItem duplicate = new MenuItem("Duplicar");
+    MenuItem addGroup = new MenuItem("Añadir a grupo");
+    MenuItem favorite = new MenuItem(selected.favorite() ? "Quitar favorito" : "Favorito");
+    MenuItem details = new MenuItem("Ver detalles");
+    MenuItem remove = new MenuItem("Eliminar");
+    start.setDisable(runtime.actualState().isActive());
+    stop.setDisable(!runtime.actualState().isActive());
+    retry.setDisable(runtime.actualState() == com.ssh.tunnelmanager.domain.tunnel.ActualState.OPEN);
+    start.setOnAction(event -> operateTunnel(selected, tunnels::start));
+    stop.setOnAction(event -> operateTunnel(selected, tunnels::stop));
+    retry.setOnAction(event -> operateTunnel(selected, tunnels::retry));
+    edit.setOnAction(event -> openTunnelEditor(tunnelTable, selected));
+    duplicate.setOnAction(event -> duplicateTunnel(selected));
+    addGroup.setOnAction(event -> bulkAssignGroup());
+    favorite.setOnAction(event -> bulkFavorite(!selected.favorite()));
+    details.setOnAction(event -> showTunnelDetails(selected));
+    remove.setOnAction(event -> deleteTunnel(selected));
+    menu.getItems()
+        .addAll(
+            start,
+            stop,
+            retry,
+            new SeparatorMenuItem(),
+            edit,
+            duplicate,
+            addGroup,
+            favorite,
+            details,
+            new SeparatorMenuItem(),
+            remove);
+    return menu;
   }
 
   private static Button compactAction(String glyph, String accessibleText) {
@@ -1854,10 +1970,46 @@ public final class ShellController implements AutoCloseable {
     endpoint.setWrapText(true);
     Label route = new Label("Ruta SSH\n" + readableRoute(selected));
     route.setWrapText(true);
+    route.setTooltip(new Tooltip(readableRoute(selected)));
     Label activity =
         new Label(
             "Tiempo activo: " + activeTime(selected) + "\nIntento: " + runtime.retryAttempt());
     activity.setWrapText(true);
+    Label connection =
+        new Label(
+            "Host final: "
+                + hostLabel(selected.finalHostId())
+                + "\nSaltos: "
+                + jumpCount(selected)
+                + "\nProyecto: "
+                + projectLabel(selected.projectId())
+                + "\nEntorno: "
+                + environmentLabel(selected.environmentId())
+                + "\nTags: "
+                + tagNames(selected));
+    connection.setWrapText(true);
+    Label lastError =
+        new Label(
+            runtime.lastError() == null
+                ? "Último error: ninguno"
+                : "Último error: " + ErrorPresentation.friendly(runtime.lastError()));
+    lastError.setWrapText(true);
+    lastError.getStyleClass().add(runtime.lastError() == null ? "detail-muted" : "error-text");
+    Button start = new Button("Iniciar");
+    Button stop = new Button("Detener");
+    Button retry = new Button("Reintentar");
+    Button edit = new Button("Editar");
+    buttonStyle(start, "primary");
+    buttonStyle(stop, "ghost");
+    buttonStyle(retry, "secondary");
+    buttonStyle(edit, "ghost");
+    start.setDisable(runtime.actualState().isActive());
+    stop.setDisable(!runtime.actualState().isActive());
+    retry.setDisable(runtime.actualState() == com.ssh.tunnelmanager.domain.tunnel.ActualState.OPEN);
+    start.setOnAction(event -> operateTunnel(selected, tunnels::start));
+    stop.setOnAction(event -> operateTunnel(selected, tunnels::stop));
+    retry.setOnAction(event -> operateTunnel(selected, tunnels::retry));
+    edit.setOnAction(event -> openTunnelEditor(tunnelTable, selected));
     Button details = new Button("Ver detalles completos");
     buttonStyle(details, "secondary");
     details.setOnAction(event -> showTunnelDetails(selected));
@@ -1866,9 +2018,13 @@ public final class ShellController implements AutoCloseable {
         .addAll(
             name,
             new StatusBadge(stateText(selected), runtime.actualState().name()),
+            flowPane(start, stop, retry, edit),
             endpoint,
             route,
+            sectionHeading("Conexión"),
+            connection,
             activity,
+            lastError,
             sectionHeading("Eventos de sesión"));
     Label events =
         new Label(
@@ -1877,6 +2033,61 @@ public final class ShellController implements AutoCloseable {
                 : String.join("\n", runtime.sessionEvents()));
     events.setWrapText(true);
     tunnelDetailPanel.getChildren().addAll(events, details);
+  }
+
+  private void toggleTunnelDetail() {
+    if (tunnelSplit == null || tunnelDetailPanel == null) return;
+    tunnelDetailVisible = !tunnelDetailVisible;
+    if (tunnelDetailVisible) {
+      if (!tunnelSplit.getItems().contains(tunnelDetailPanel)) {
+        tunnelSplit.getItems().add(tunnelDetailPanel);
+      }
+    } else {
+      tunnelSplit.getItems().remove(tunnelDetailPanel);
+    }
+    if (detailToggle != null) {
+      detailToggle.setText(tunnelDetailVisible ? "Ocultar detalle" : "Mostrar detalle");
+    }
+    if (components != null) {
+      boolean visible = tunnelDetailVisible;
+      workers.submit(
+          () ->
+              components
+                  .settingsRepository()
+                  .put("ui.tunnelDetailVisible", Boolean.toString(visible)));
+    }
+  }
+
+  private int jumpCount(TunnelRecord tunnel) {
+    return (tunnel.jump1HostId() == null ? 0 : 1) + (tunnel.jump2HostId() == null ? 0 : 1);
+  }
+
+  private String projectLabel(UUID id) {
+    if (id == null || tunnelProjectFilter == null) return "Sin proyecto";
+    return tunnelProjectFilter.getItems().stream()
+        .filter(project -> project.id().equals(id))
+        .map(ProjectRecord::name)
+        .findFirst()
+        .orElse("Proyecto " + id);
+  }
+
+  private String environmentLabel(UUID id) {
+    if (id == null || tunnelEnvironmentFilter == null) return "Sin entorno";
+    return tunnelEnvironmentFilter.getItems().stream()
+        .filter(environment -> environment.id().equals(id))
+        .map(EnvironmentRecord::name)
+        .findFirst()
+        .orElse("Entorno " + id);
+  }
+
+  private String tagNames(TunnelRecord tunnel) {
+    if (tunnel.tagIds().isEmpty() || tunnelTagFilter == null) return "ninguno";
+    String names =
+        tunnelTagFilter.getItems().stream()
+            .filter(tag -> tunnel.tagIds().contains(tag.id()))
+            .map(TagRecord::name)
+            .collect(java.util.stream.Collectors.joining(", "));
+    return names.isBlank() ? tunnel.tagIds().size() + " seleccionadas" : names;
   }
 
   private void updateTunnelSelectionContext() {
@@ -1896,6 +2107,7 @@ public final class ShellController implements AutoCloseable {
     if ("tunnels".equals(selected.id())) {
       if (tunnelTable != null) {
         tunnelTable.refresh();
+        updateTunnelDetail(tunnelTable.getSelectionModel().getSelectedItem());
         refreshTunnels(tunnelTable);
       } else showTunnels();
     }
@@ -1985,12 +2197,42 @@ public final class ShellController implements AutoCloseable {
         });
     refreshFilterChips();
     if (tunnelTable != null) {
-      tunnelTable.setPlaceholder(
+      boolean noConfiguredTunnels = tunnelRows.isEmpty();
+      VBox emptyState = new VBox(6);
+      emptyState.setAlignment(Pos.CENTER);
+      emptyState.getStyleClass().add("empty-state");
+      Label title =
           new Label(
-              tunnelRows.isEmpty()
-                  ? "Aún no hay túneles. Usa Nuevo túnel para crear el primero."
-                  : "Ningún túnel coincide con estos filtros."));
+              noConfiguredTunnels
+                  ? "No hay túneles configurados"
+                  : "No encontramos túneles con estos filtros.");
+      title.getStyleClass().add("empty-state-title");
+      Label description =
+          new Label(
+              noConfiguredTunnels
+                  ? "Crea tu primer túnel para empezar."
+                  : "Prueba a limpiar o cambiar los filtros activos.");
+      description.setWrapText(true);
+      emptyState.getChildren().addAll(title, description);
+      Button emptyAction = new Button(noConfiguredTunnels ? "Crear túnel" : "Limpiar filtros");
+      buttonStyle(emptyAction, "secondary");
+      emptyAction.setOnAction(
+          event -> {
+            if (noConfiguredTunnels) openTunnelEditor(tunnelTable, null);
+            else clearTunnelFilters();
+          });
+      emptyState.getChildren().add(emptyAction);
+      tunnelTable.setPlaceholder(emptyState);
     }
+  }
+
+  private void clearTunnelFilters() {
+    if (tunnelSearch != null) tunnelSearch.clear();
+    if (tunnelProjectFilter != null) tunnelProjectFilter.setValue(null);
+    if (tunnelEnvironmentFilter != null) tunnelEnvironmentFilter.setValue(null);
+    if (tunnelGroupFilter != null) tunnelGroupFilter.setValue(null);
+    if (tunnelStateFilter != null) tunnelStateFilter.setValue(null);
+    if (tunnelTagFilter != null) tunnelTagFilter.getSelectionModel().clearSelection();
   }
 
   private void refreshFilterChips() {

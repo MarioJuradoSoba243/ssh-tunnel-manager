@@ -254,6 +254,10 @@
     -fx-text-fill: -app-text-primary;
 }
 
+.detail-muted {
+    -fx-text-fill: -app-text-secondary;
+}
+
 .status-badge {
     -fx-spacing: 6px;
     -fx-padding: 4px 8px;
@@ -265,6 +269,11 @@
 .status-badge .status-dot {
     -fx-font-size: 12px;
     -fx-font-weight: bold;
+}
+
+.status-badge .status-icon {
+    -fx-min-width: 14px;
+    -fx-alignment: CENTER;
 }
 
 .status-badge.open { -fx-background-color: derive(-app-success, 80%); -fx-text-fill: -app-success; }
@@ -308,6 +317,15 @@
 }
 
 .contextual-selection-bar .label { -fx-text-fill: white; -fx-font-weight: bold; }
+.contextual-selection-bar .button,
+.contextual-selection-bar .menu-button {
+    -fx-text-fill: white;
+    -fx-border-color: rgba(255, 255, 255, 0.35);
+}
+.contextual-selection-bar .button:hover,
+.contextual-selection-bar .menu-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.16);
+}
 .row-actions { -fx-alignment: CENTER_RIGHT; -fx-spacing: 4px; }
 .row-action {
     -fx-font-size: 16px;
@@ -339,6 +357,16 @@
 .toast.success { -fx-border-color: -app-success; }
 .toast.error { -fx-border-color: -app-error; }
 .toast.warning { -fx-border-color: -app-warning; }
+.toast.info { -fx-border-color: -app-accent; }
+.toast-message { -fx-text-fill: -app-text-primary; }
+.toast-close {
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -app-text-secondary;
+}
 
 .command-palette { -fx-padding: 2px; }
 .command-palette .list-view { -fx-min-height: 260px; }
