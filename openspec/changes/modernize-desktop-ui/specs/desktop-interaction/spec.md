@@ -195,3 +195,70 @@ instancia cacheada y estado observable cuando corresponda.
 - GIVEN se solicitó cargar un editor y el usuario navega a otra sección antes de terminar
 - WHEN finaliza la carga asíncrona
 - THEN el editor obsoleto no reemplaza la sección actualmente seleccionada
+
+### Requirement: Operación profesional de túneles
+
+La vista de túneles SHALL priorizar la lectura de la tabla y el detalle
+contextual. Las acciones frecuentes SHALL ser visibles con objetivos
+utilizables y las menos frecuentes SHALL estar disponibles mediante menú
+contextual o menú Más, sin duplicar reglas de aplicación.
+
+#### Scenario: Operar un túnel desde su fila
+
+- GIVEN una fila de túnel visible
+- WHEN el usuario abre su menú contextual
+- THEN puede iniciar, detener, reintentar, editar, duplicar, marcar favorito,
+  ver detalles o eliminar según el estado actual
+- AND las acciones delegan en los mismos flujos de la vista principal
+
+#### Scenario: Ocultar el detalle lateral
+
+- GIVEN la vista de túneles con el panel de detalle visible
+- WHEN el usuario pulsa Ocultar detalle
+- THEN la tabla ocupa el espacio disponible sin recrearse
+- AND la preferencia de visibilidad se conserva para el siguiente arranque
+
+### Requirement: Feedback operativo no bloqueante
+
+Las operaciones completadas o fallidas SHALL poder comunicar un resultado
+breve mediante toasts no modales. El host SHALL limitar la cantidad visible,
+permitir cierre manual y mantener contraste suficiente en claro y oscuro.
+
+#### Scenario: Gestionar varios avisos
+
+- GIVEN se producen más avisos que el límite visible
+- WHEN se muestra un nuevo toast
+- THEN se conserva únicamente la cantidad máxima configurada
+- AND cada aviso puede cerrarse manualmente o expira automáticamente
+
+### Requirement: Empty states accionables
+
+La tabla de túneles SHALL distinguir una colección vacía de una colección sin
+coincidencias por filtros. Cada caso SHALL ofrecer una acción adecuada y no
+mostrar un estado expresado únicamente mediante color.
+
+#### Scenario: Crear desde una colección vacía
+
+- GIVEN no existen túneles configurados
+- WHEN se abre Túneles
+- THEN se muestra un estado vacío orientativo con Crear túnel
+
+#### Scenario: Limpiar un filtro sin resultados
+
+- GIVEN existen túneles pero ningún registro coincide con los filtros
+- WHEN se muestra el estado vacío
+- THEN se ofrece Limpiar filtros sin alterar los datos guardados
+
+### Requirement: Productividad de la paleta de comandos
+
+La paleta SHALL ofrecer navegación y comandos frecuentes, mostrar atajos
+cuando proceda y soportar escritura, Arriba, Abajo, Enter y Escape. La
+búsqueda de entidades SHALL usar el índice en memoria existente y no ejecutar
+consultas SQLite por pulsación.
+
+#### Scenario: Navegar por la paleta con teclado
+
+- GIVEN la paleta está abierta con resultados
+- WHEN el usuario usa Arriba/Abajo y confirma con Enter
+- THEN se ejecuta la entrada seleccionada
+- AND Escape cierra la paleta sin modificar el workspace

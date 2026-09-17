@@ -81,3 +81,21 @@
   reutilizar la vista cacheada de Túneles.
 - [x] 8.8 Sustituir el selector de etiquetas modal por un popup ligero con
   búsqueda local, selección múltiple, chips removibles y navegación de teclado.
+
+## 9. Iteración de producto operativo
+
+- [x] 9.1 Pulir badges de estado, barra contextual, empty states y toasts con
+  iconografía, contraste, cierre manual y límites visibles.
+- [x] 9.2 Añadir acciones contextuales de túnel y ampliar la paleta con
+  navegación, creación, datos y diagnóstico sin consultas por pulsación.
+- [x] 9.3 Ampliar el panel lateral de detalle, sus acciones y la preferencia de
+  visibilidad sin recrear la tabla.
+- [x] 9.4 Añadir tests de estados de badge, cola de toasts y empty/interaction
+  contracts donde son estables sin probar píxeles.
+- [ ] 9.5 Completar persistencia de filtros, orden y anchos de columnas/panel,
+  y revisar menús contextuales equivalentes de grupos y hosts.
+- [ ] 9.6 Completar onboarding derivado y activity feed diferenciando actividad
+  runtime de recientes persistidos.
+- [ ] 9.7 Validar visualmente Hub, Túneles, detalle, Grupos, Hosts,
+  Organización, Ajustes, paleta, menús, toasts y diálogos en claro/oscuro,
+  Comfortable/Compact y 100/125/150/200 %.

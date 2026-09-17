@@ -92,6 +92,22 @@ quitar favoritos, asignar proyecto/entorno, y añadir o quitar la selección de 
 grupo. Estas acciones se ejecutan fuera del hilo de JavaFX y las relaciones se
 guardan de forma transaccional.
 
+Al seleccionar un túnel, el panel lateral muestra su endpoint, destino, ruta SSH,
+host final, saltos, clasificación, etiquetas, tiempo activo, último error y
+eventos de la sesión. Sus acciones principales están disponibles en el propio
+panel; **Ocultar detalle** permite dar más espacio a la tabla y conserva esa
+preferencia. Con el botón derecho sobre una fila se abre el menú contextual de
+operaciones del túnel.
+
+Cuando no hay túneles, **Túneles** ofrece **Crear túnel**. Si los filtros no
+devuelven resultados, ofrece **Limpiar filtros**. Las operaciones breves se
+comunican mediante avisos no bloqueantes que pueden cerrarse con **×**.
+
+La paleta **Ctrl+K** también permite crear túneles, hosts y grupos, navegar por
+Túneles, Grupos, Hosts, Organización y Ajustes, y abrir acciones de datos y
+diagnóstico. Usa **Arriba/Abajo**, **Enter** y **Escape** para manejarla sin
+ratón.
+
 ## Fingerprints
 
 La primera conexión a un `hostname:puerto` muestra el algoritmo y la fingerprint
