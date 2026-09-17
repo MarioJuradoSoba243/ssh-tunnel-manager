@@ -79,3 +79,5 @@
   duplicadas al guardar/cancelar editores y descartar callbacks obsoletos.
 - [x] 8.7 Añadir tests de regresión estructurales para guardar, cancelar y
   reutilizar la vista cacheada de Túneles.
+- [x] 8.8 Sustituir el selector de etiquetas modal por un popup ligero con
+  búsqueda local, selección múltiple, chips removibles y navegación de teclado.

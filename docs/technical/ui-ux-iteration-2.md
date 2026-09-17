@@ -114,6 +114,7 @@ ventana renderizada.
 | Acciones de fila: glifo legible, objetivo, foco, hover y tooltip | ____ | ____ | ____________________ |
 | Diálogos de error/importación/conflicto/backup sin clipping ni estrechez | ____ | ____ | ____________________ |
 | Hub, Túneles, Grupos, Hosts, Organización, Ajustes y búsqueda sin regresión | ____ | ____ | ____________________ |
+| Selector de etiquetas en editor de túnel/grupo | Claro/oscuro; Comfortable/Compact; 100/125/150/200 % | `Dialog` modal y `ListView` permanente en el formulario principal. | `TagSelectionControl` ahora usa chips con wrap y un `Popup` no modal con búsqueda local, checkboxes, contador, Cerrar y Escape; se reutiliza en túnel y grupo. | `TagSelectionModelTest`, `TagSelectionControlTest`, `clean verify`; inspección visual manual pendiente. |
 
 ### Checklist manual específica de navegación de editores
 

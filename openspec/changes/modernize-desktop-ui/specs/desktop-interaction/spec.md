@@ -136,6 +136,23 @@ teclado.
 - THEN las etiquetas aparecen como chips en el formulario
 - AND cada chip ofrece una acción accesible para quitarlo
 
+### Requirement: Selector ligero de etiquetas
+
+Los editores de túnel y grupo SHALL abrir el catálogo de etiquetas desde un
+popup ligero y no modal. El formulario SHALL mostrar únicamente los chips
+seleccionados y la acción Añadir; la búsqueda del popup SHALL filtrar en
+memoria sin consultas por pulsación.
+
+#### Scenario: Selección cómoda de múltiples etiquetas
+
+- GIVEN existen múltiples etiquetas
+- WHEN el usuario edita un túnel
+- THEN las etiquetas seleccionadas se muestran de forma compacta y con wrap
+- AND puede buscar y seleccionar varias etiquetas en el popup
+- AND puede quitar una etiqueta desde su chip sin utilizar una lista pequeña
+  con scroll permanente
+- AND cerrar o reabrir el popup conserva la selección visual
+
 ### Requirement: Acciones de tabla perceptibles
 
 Las acciones de fila y los indicadores de favorito SHALL mantener una escala
